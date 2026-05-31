@@ -1,0 +1,414 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Entry System - Punch Time ERP</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/tom-select.css' %}" rel="stylesheet"> 
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        @font-face { 
+            font-family: 'SolaimanLipi'; 
+            src: url("{% static 'fonts/SolaimanLipi.ttf' %}"); 
+        }
+        :root { 
+            --sidebar-width: 260px;
+            --accent-color: #3b82f6; 
+            --accent-glowing: #0dcaf0;
+            --success-punch: #198754;
+            --sb-bg-dark: #1e293b;
+            --sb-hover-slate: #334155;
+            --sb-glow-link: rgba(59, 130, 246, 0.12);
+            --sb-glow-text: #60a5fa;
+            --sb-muted-gray: #94a3b8;
+        }
+        body { 
+            font-family: 'Inter', 'SolaimanLipi', sans-serif; 
+            background-color: #f1f5f9; 
+            overflow-x: hidden; 
+        }
+        
+        /* 🌌 Fullscreen Splash Screen Matching Animation Theme */
+        #appSplashScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #1e293b; z-index: 99999; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+        }
+        .splash-core { position: relative; width: 150px; height: 150px; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; }
+        .splash-ring { position: absolute; width: 130px; height: 130px; border: 4px dashed var(--accent-color); border-radius: 50%; animation: rotateRing 8s linear infinite; }
+        .splash-fingerprint { font-size: 4.5rem; color: #ffffff; z-index: 5; animation: splashPulse 2s infinite alternate ease-in-out; }
+        .splash-brand { opacity: 0; transform: translateY(15px); animation: fadeUpText 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; animation-delay: 0.3s; }
+        .splash-progress-track { width: 180px; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        .splash-progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-color), var(--accent-glowing)); border-radius: 10px; animation: loadBar 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+        
+        @keyframes rotateRing { 100% { transform: rotate(360deg); } }
+        @keyframes splashPulse {
+            0% { transform: scale(0.92); color: var(--accent-color); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
+            50% { color: var(--accent-glowing); filter: drop-shadow(0 0 25px rgba(13, 202, 240, 0.8)); }
+            100% { transform: scale(1.03); color: var(--success-punch); filter: drop-shadow(0 0 35px rgba(25, 135, 84, 0.9)); }
+        }
+        @keyframes fadeUpText { to { opacity: 1; transform: translateY(0); } }
+        @keyframes loadBar { to { width: 100%; } }
+
+        /* 💻 Master Responsive Layout Controllers */
+        .top-nav {
+            background-color: #ffffff;
+            height: 70px;
+            padding: 0 1.5rem;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 1020;
+            border-bottom: 1px solid #e2e8f0;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .main-wrapper {
+            margin-top: 70px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+        }
+        
+        /* Desktop Default Setup */
+        @media (min-width: 768px) {
+            .top-nav { left: var(--sidebar-width); }
+            .main-wrapper { padding-left: var(--sidebar-width); }
+        }
+
+        /* 🔄 Collapsed State Overrides */
+        body.sidebar-collapsed .top-nav { left: 0 !important; }
+        body.sidebar-collapsed .main-wrapper { padding-left: 0 !important; }
+        body.sidebar-collapsed #sidebar { transform: translateX(-100%); }
+
+        /* 📱 Mobile Backdrop Overlay */
+        #sidebarBackdrop {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px);
+            z-index: 1025; display: none;
+        }
+
+        /* ⚙️ Sidebar Premium Panel Styles */
+        .sidebar-premium-panel {
+            background-color: var(--sb-bg-dark) !important;
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1030;
+            border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-premium-panel .nav-link {
+            color: var(--sb-muted-gray);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+        }
+        .sidebar-premium-panel .nav-link:hover {
+            background-color: var(--sb-hover-slate);
+            color: #ffffff;
+        }
+        .sidebar-premium-panel .nav-link.active-link-param {
+            background-color: var(--sb-glow-link) !important;
+            color: var(--sb-glow-text) !important;
+            font-weight: 600;
+        }
+        @media (max-width: 767.98px) {
+            .sidebar-premium-panel { transform: translateX(-100%); }
+        }
+        .sidebar-menu-scroller::-webkit-scrollbar { width: 4px; }
+        .sidebar-menu-scroller::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* ⚙️ Biometric Global Synchronization Engine Loader Styles */
+        .punch-sync-loader { display: flex; justify-content: center; align-items: center; position: relative; height: 110px; margin-top: 10px; margin-bottom: 15px; }
+        .pulse-ring { position: absolute; width: 80px; height: 80px; border: 4px solid var(--accent-color); border-radius: 50%; animation: ripple 1.6s infinite ease-out; }
+        .fingerprint-icon { font-size: 3.3rem; color: var(--accent-color); z-index: 2; animation: pulseScan 2s infinite alternate ease-in-out; }
+        
+        @keyframes ripple {
+            0% { transform: scale(0.5); opacity: 1; border-color: var(--accent-color); }
+            50% { border-color: var(--accent-glowing); }
+            100% { transform: scale(1.35); opacity: 0; border-color: var(--success-punch); }
+        }
+        @keyframes pulseScan {
+            0% { transform: scale(0.95); color: var(--accent-color); filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4)); }
+            50% { color: var(--accent-glowing); filter: drop-shadow(0 0 12px rgba(13, 202, 240, 0.6)); }
+            100% { transform: scale(1.05); color: var(--success-punch); filter: drop-shadow(0 0 20px rgba(25, 135, 84, 0.8)); }
+        }
+        .swal2-popup { border-radius: 16px !important; }
+    </style>
+</head>
+<body>
+
+<div id="appSplashScreen">
+    <div class="splash-core">
+        <div class="splash-ring"></div>
+        <i class="bi bi-fingerprint splash-fingerprint"></i>
+    </div>
+    <div class="text-center splash-brand">
+        <h3 class="text-white fw-bold mb-0">Manual<span class="text-primary">Entry</span></h3>
+        <p class="text-muted small mb-0" style="letter-spacing: 2px; font-size: 11px;">SECURE LOGS PROCESSING WORKSPACE</p>
+        <div class="splash-progress-track mx-auto">
+            <div class="splash-progress-bar"></div>
+        </div>
+    </div>
+</div>
+
+<div id="sidebarBackdrop"></div>
+
+<header class="top-nav d-flex justify-content-between align-items-center shadow-sm">
+    <div class="d-flex align-items-center">
+        <button class="btn btn-light me-3" id="sidebarToggle">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        
+        <div class="d-flex align-items-center gap-2 branding-logo-top">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+                <defs>
+                    <linearGradient id="topNavPunchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#3b82f6" />
+                        <stop offset="100%" stop-color="#0dcaf0" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#topNavPunchGrad)" stroke-width="4" stroke-dasharray="6 3" />
+                <circle cx="50" cy="50" r="38" fill="#ffffff" />
+                <line x1="50" y1="50" x2="50" y2="26" stroke="#3b82f6" stroke-width="5" stroke-linecap="round" />
+                <line x1="50" y1="50" x2="66" y2="50" stroke="#0dcaf0" stroke-width="5" stroke-linecap="round" />
+                <circle cx="50" cy="50" r="5" fill="#198754" />
+            </svg>
+            <h5 class="mb-0 fw-bold text-dark tracking-tight d-none d-sm-block">
+                Manual<span class="text-primary">Entry</span> 
+                <small class="fs-6 text-muted fw-normal d-none d-lg-inline-block">| Arithmetic Dataset Logs & Gateways</small>
+            </h5>
+        </div>
+    </div>
+    
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-light position-relative rounded-circle p-2">
+            <i class="bi bi-bell fs-5 text-secondary"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 10px;">
+                3
+            </span>
+        </button>
+
+        <button class="btn btn-sm btn-light rounded-circle p-2">
+            <i class="bi bi-gear fs-5 text-secondary"></i>
+        </button>
+
+        <div class="dropdown">
+            <a class="d-flex align-items-center text-decoration-none dropdown-toggle gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="https://ui-avatars.com/api/?name={{ request.user.username|default:'Admin' }}&background=3b82f6&color=fff" class="rounded-circle border" width="36" height="36">
+                <div class="text-end d-none d-md-block me-1">
+                    <p class="small mb-0 fw-bold text-dark lh-1" style="font-size: 13px;">{{ request.user.username|default:"Administrator" }}</p>
+                    <span class="badge bg-success-subtle text-success mt-1" style="font-size: 9px; padding: 2px 6px;">Active Pool</span>
+                </div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" style="border-radius: 10px;">
+                <li>
+                    <a href="" class="dropdown-item py-2">
+                        <i class="bi bi-person me-2 text-primary"></i> Workspace Profile
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider opacity-50"></li>
+                <li>
+                    <form id="headerLogoutForm" action="{% url 'logout' %}" method="post" class="d-none">
+                        {% csrf_token %}
+                    </form>
+                    <a class="dropdown-item text-danger py-2" href="#" onclick="document.getElementById('headerLogoutForm').submit(); return false;">
+                        <i class="bi bi-box-arrow-right me-2"></i> Disconnect Session
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar-premium-panel d-flex flex-column">
+  
+  <div class="p-3 d-flex align-items-center gap-2 border-bottom border-secondary border-opacity-10 bg-dark bg-opacity-20" style="min-height: 70px;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="34" height="34">
+      <defs>
+        <linearGradient id="sidebarPunchGradParam" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6" />
+          <stop offset="100%" stop-color="#0dcaf0" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="url(#sidebarPunchGradParam)" stroke-width="4" stroke-dasharray="8 4" />
+      <circle cx="50" cy="50" r="38" fill="#1e293b" />
+      <line x1="50" y1="50" x2="50" y2="26" stroke="#3b82f6" stroke-width="4.5" stroke-linecap="round" />
+      <line x1="50" y1="50" x2="66" y2="50" stroke="#0dcaf0" stroke-width="4.5" stroke-linecap="round" />
+      <circle cx="50" cy="50" r="5" fill="#198754" />
+    </svg>
+    <div class="text-start">
+      <h5 class="text-white fw-bold mb-0 tracking-tight" style="font-size: 16px; letter-spacing: 0.5px;">Punch<span class="text-primary">Time</span></h5>
+      <span class="badge bg-primary-subtle text-primary p-0 px-1" style="font-size: 9px; font-weight: 500;">{{ user_role }}</span>
+    </div>
+  </div>
+
+  <div class="sidebar-menu-scroller flex-grow-1 overflow-auto px-2 py-3">
+    <div class="accordion bg-transparent border-0" id="sidebarMenuAccordionRoot">
+      
+      <div class="nav-item mb-2">
+        <a href="{% url 'dashboard' %}" class="nav-link py-2 px-3 d-flex align-items-center {% if request.resolver_match.url_name == 'dashboard' %}active-link-param{% endif %}" style="font-size: 14px;" onclick="showPunchTimeLoader('Loading Main Control Unit...')">
+          <i class="bi bi-grid-1x2-fill me-2 {% if request.resolver_match.url_name == 'dashboard' %}text-info{% else %}text-primary{% endif %}"></i>
+          <span>System Dashboard</span>
+        </a>
+      </div>
+
+      <div class="accordion-item bg-transparent border-0 mb-2">
+        <h2 class="accordion-header" id="headingManualOperations">
+          <button class="accordion-button bg-transparent text-secondary py-2 px-3 fs-6 {% if 'manual-entry' in request.path %}{% else %}collapsed{% endif %}" 
+                  type="button" data-bs-toggle="collapse" data-bs-target="#collapseManualOperations" 
+                  aria-expanded="{% if 'manual-entry' in request.path %}true{% else %}false{% endif %}" aria-controls="collapseManualOperations">
+            <i class="bi bi-calculator-fill me-2 text-primary"></i>
+            <span style="font-size: 14px; font-weight: 600;">Manual Operations</span>
+          </button>
+        </h2>
+        
+        <div id="collapseManualOperations" class="accordion-collapse collapse {% if 'manual-entry' in request.path %}show{% endif %}" 
+             aria-labelledby="headingManualOperations" data-bs-parent="#sidebarMenuAccordionRoot">
+          <div class="accordion-body bg-dark bg-opacity-20 rounded-3 py-1 px-0 mt-1 ms-2 border-start border-secondary border-opacity-25 id-menu-layer">
+            <ul class="nav flex-column gap-1 ps-2">
+              
+              <li class="nav-item">
+                <a href="{% url 'manualentry:entry_list' %}" class="nav-link py-2 px-3 d-flex align-items-center {% if request.resolver_match.url_name == 'entry_list' or request.resolver_match.url_name == 'entry_add' or request.resolver_match.url_name == 'entry_edit' %}active-link-param{% endif %}" style="font-size: 13.5px;" onclick="showPunchTimeLoader('Syncing Calculation Logs...')">
+                  <i class="bi bi-terminal me-2"></i>
+                  <span>Calculation Logs</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a href="{% url 'manualentry:terminal_list' %}" class="nav-link py-2 px-3 d-flex align-items-center {% if request.resolver_match.url_name == 'terminal_list' or request.resolver_match.url_name == 'terminal_add' or request.resolver_match.url_name == 'terminal_edit' %}active-link-param{% endif %}" style="font-size: 13.5px;" onclick="showPunchTimeLoader('Fetching Terminal Infrastructure...')">
+                  <i class="bi bi-cpu-fill me-2"></i>
+                  <span>Hardware Terminals</span>
+                </a>
+              </li>
+
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {% for group in sidebar_groups %}
+        {% if group.modules|length > 1 %}
+          <div class="accordion-item bg-transparent border-0 mb-2">
+            <h2 class="accordion-header" id="headingGroup{{ forloop.counter }}">
+              <button class="accordion-button bg-transparent text-secondary py-2 px-3 fs-6 {% if not group.active %}collapsed{% endif %}" 
+                      type="button" data-bs-toggle="collapse" data-bs-target="#collapseGroup{{ forloop.counter }}" 
+                      aria-expanded="{% if group.active %}true{% else %}false{% endif %}" aria-controls="collapseGroup{{ forloop.counter }}">
+                <i class="{{ group.icon }} me-2 text-primary"></i>
+                <span style="font-size: 14px; font-weight: 600;">{{ group.name }}</span>
+              </button>
+            </h2>
+            
+            <div id="collapseGroup{{ forloop.counter }}" class="accordion-collapse collapse {% if group.active %}show{% endif %}" 
+                 aria-labelledby="headingGroup{{ forloop.counter }}" data-bs-parent="#sidebarMenuAccordionRoot">
+              <div class="accordion-body bg-dark bg-opacity-20 rounded-3 py-1 px-0 mt-1 ms-2 border-start border-secondary border-opacity-25 ps-2">
+                <ul class="nav flex-column gap-1">
+                  {% for module in group.modules %}
+                    <li class="nav-item">
+                      <a href="{{ module.url }}" class="nav-link py-2 px-3 d-flex align-items-center {% if module.is_active %}active-link-param{% endif %}" style="font-size: 13.5px;">
+                        <i class="{{ module.icon }} me-2"></i>
+                        <span>{{ module.name }}</span>
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          {% for module in group.modules %}
+            <div class="nav-item mb-1">
+              <a href="{{ module.url }}" class="nav-link py-2 px-3 d-flex align-items-center {% if module.is_active %}active-link-param{% endif %}" style="font-size: 14px;">
+                <i class="{{ module.icon }} me-2 text-primary"></i>
+                <span>{{ module.name }}</span>
+              </a>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <div class="p-3 border-top border-secondary border-opacity-10 bg-dark bg-opacity-10 mt-auto">
+    <form id="sidebarLogoutForm" action="{% url 'logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger w-100 rounded-3 py-2 btn-sm transition-all" style="font-size: 13px;">
+        <i class="bi bi-box-arrow-right me-2"></i> Sign Out System
+      </button>
+    </form>
+  </div>
+</aside>
+<div class="main-wrapper">
+    <main class="container-fluid py-4 px-3 px-md-4" id="mainContent">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script> 
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script> 
+<script src="{% static 'js/select2.min.js' %}"></script>
+<script src="{% static 'js/chart.js' %}"></script>
+<script src="{% static 'js/sweetalert2@11.js' %}"></script>
+<script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+
+<script>
+    $(document).ready(function() {
+        // 🔄 Responsive Sidebar System Logic
+        function toggleSidebar() {
+            if ($(window).width() < 768) {
+                if ($('#sidebar').css('transform') === 'none' || $('#sidebar').css('transform') === 'matrix(1, 0, 0, 1, 0, 0)') {
+                    $('#sidebar').css('transform', 'translateX(-100%)');
+                    $('#sidebarBackdrop').fadeOut(200);
+                } else {
+                    $('#sidebar').css('transform', 'none');
+                    $('#sidebarBackdrop').fadeIn(200);
+                }
+            } else {
+                $('body').toggleClass('sidebar-collapsed');
+            }
+        }
+
+        $('#sidebarToggle, #sidebarBackdrop').on('click', function(e) {
+            e.preventDefault();
+            toggleSidebar();
+        });
+
+        $(window).on('resize', function() {
+            if ($(window).width() >= 768) {
+                $('#sidebar').css('transform', '');
+                $('#sidebarBackdrop').hide();
+            }
+        });
+
+        // ⏱️ Graceful Termination of Boot Splash Controller
+        setTimeout(function() {
+            $('#appSplashScreen').css({ 'opacity': '0', 'visibility': 'hidden' });
+        }, 800);
+    });
+
+    // 🔒 Global Biometric Engine Sync Utility View Callers
+    function showPunchTimeLoader(customMessage = "Pushing data parameters into arithmetic active matrices...") {
+        Swal.fire({
+            title: 'Manual Entry Sync Engine',
+            html: `
+                <div class="punch-sync-loader"><div class="pulse-ring"></div><i class="bi bi-fingerprint fingerprint-icon"></i></div>
+                <p class="text-dark fw-bold mb-1" style="font-size: 15px;">Synchronizing Datasets...</p>
+                <p class="text-muted small px-3 mb-0" style="font-size: 12px; line-height: 1.4;">${customMessage}</p>
+            `,
+            showConfirmButton: false, allowOutsideClick: false
+        });
+    }
+    function closePunchTimeLoader() { Swal.close(); }
+</script>
+{% block scripts %}{% endblock %}
+{% block extra_js %}{% endblock %}
+</body>
+</html>

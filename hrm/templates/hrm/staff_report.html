@@ -1,0 +1,325 @@
+{% extends 'mainsystem/base_report.html' %}
+{% load static %}
+{% load custom_tags %}
+
+{% block report_body %}
+<style>
+    /* রিপোর্ট এরিয়া */
+    .content-area { padding: 5px 0; color: #000; width: 100%; }
+    
+    /* ফিল্টার বার ডিজাইন */
+    .filter-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 5px solid #0d6efd;
+    }
+
+    /* টাইটেল এবং ডেট বার */
+    .report-header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f0f0f0;
+        padding: 8px 12px;
+        border: 1.5px solid #000;
+        margin-bottom: 15px;
+    }
+    .report-title { 
+        font-size: 16px; margin: 0; 
+        text-transform: uppercase; font-weight: bold;
+    }
+
+    /* সামারি সেকশন */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .summary-box {
+        border: 1px solid #000;
+        padding: 5px;
+        text-align: center;
+    }
+    .summary-label { font-size: 10px; font-weight: bold; display: block; border-bottom: 1px solid #000; margin-bottom: 3px; background: #eee; }
+    .summary-value { font-size: 14px; font-weight: bold; }
+
+    /* মেইন টেবিল ডিজাইন - শতাংশ (%) এ পরিবর্তন করা হয়েছে রেসপনসিভ করার জন্য */
+    .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+    .report-table th, .report-table td { 
+        border: 1px solid #000; 
+        padding: 4px 3px; 
+        font-size: 9px; /* প্রোটেইটে ফিট করার জন্য ফন্ট সাইজ সামান্য কমানো হয়েছে */
+        word-wrap: break-word;
+        vertical-align: middle;
+    }
+    .report-table th { background-color: #e9ecef !important; font-weight: bold; text-transform: uppercase; }
+    
+    /* ডিপার্টমেন্ট রো */
+    .dept-row-header {
+        background-color: #f8f9fa !important;
+        text-align: left !important;
+        padding: 6px 10px !important;
+        font-weight: bold;
+        font-size: 10.5px;
+        border-left: 5px solid #000 !important;
+    }
+
+    /* সিগনেচার এরিয়া */
+    .signature-container {
+        margin-top: 50px;
+        display: flex;
+        justify-content: space-between;
+    }
+    .sig-box {
+        border-top: 1.2px solid #000;
+        width: 150px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: bold;
+        padding-top: 5px;
+    }
+
+    .text-start { text-align: left !important; padding-left: 5px !important; }
+    .text-center { text-align: center !important; }
+
+    /* অতিরিক্ত স্ক্রলবার এড়াতে ওভারফ্লো হ্যান্ডলিং */
+    .table-responsive {
+        overflow-x: visible !important; /* প্রিন্ট এবং প্রোটেইটে যাতে স্ক্রল না আসে */
+    }
+
+    @media print {
+        .no-print, .filter-section, .btn, .input-group, .form-select { 
+            display: none !important; 
+        }
+        body { background: white; padding: 0; }
+        .content-area { padding: 0; width: 100%; }
+        .report-table th, .report-table td { font-size: 8.5px; padding: 3px 2px; } /* প্রিন্টে আরও নিখুঁত দেখানোর জন্য */
+    }
+</style>
+
+<div class="content-area" style="font-family: 'Inter', 'SolaimanLipi', sans-serif; ">
+    <!-- Multi-Filter Bar (Hidden in Print) -->
+    <div class="filter-section no-print">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="fas fa-search"></i></span>
+                    <input type="text" id="staffSearch" class="form-control bg-light border-0" placeholder="Search name or ID...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select id="deptFilter" class="form-select bg-light border-0">
+                    <option value="">All Departments/Class</option>
+                    {% for d in departments %}<option value="{{ d.name }}">{{ d.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="roleFilter" class="form-select bg-light border-0">
+                    <option value="">All Type User</option>
+                    {% for role in user_roles %}
+                        <option value="{{ role.name }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="statusFilter" class="form-select bg-light border-0">
+                    <option value="">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100 border-0" onclick="resetStaffFilters()">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- রিপোর্ট হেডার -->
+    <div class="report-header-bar">
+        <h2 class="report-title"><i class="fas fa-users-cog"></i> Detailed Directory</h2>
+        <div style="font-size: 10px;"><b>Print Date:</b> {% now "d F Y, h:i A" %}</div>
+    </div>
+
+    <!-- সামারি বক্স -->
+    <div class="summary-grid">
+        <div class="summary-box">
+            <span class="summary-label">TOTAL Personnel</span>
+            <span class="summary-value" id="totalCount">{{ staffs.count }}</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">ACTIVE Student</span>
+            <span class="summary-value text-success">{% if staffs %}{{ staffs.count }}{% else %}0{% endif %}</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">DEPARTMENTS</span>
+            <span class="summary-value">{% if departments %}{{ departments|length }}{% else %}1{% endif %}</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">REPORT STATUS</span>
+            <span class="summary-value">OFFICIAL</span>
+        </div>
+    </div>
+
+    {% regroup staffs by department.name as dept_group %}
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive" id="printableArea">
+            <table class="report-table table table-hover align-middle mb-0" id="staffTable">
+                <thead class="table-light">
+                    <tr class="text-muted small text-uppercase" style="letter-spacing: 0.5px; background-color: #f8f9fa;">
+                        <!-- এখানে পিক্সেলের (px) পরিবর্তে শতকরা (%) হিসাব ব্যবহার করা হয়েছে মোট ১০০% মেলানোর জন্য -->
+                        <th style="width: 5%;" class="text-center">SL</th>
+                        <th style="width: 7%;" class="text-center">Photo</th>
+                        <th style="width: 12%;" class="text-center">ID</th>
+                        <th style="width: 28%;" class="text-start">Name & Parents Info</th>
+                        <th style="width: 8%;" class="text-center">Roll</th>
+                        <th style="width: 18%;" class="text-start">Contact Info</th>
+                        <th style="width: 7%;" class="text-center">Blood</th>
+                        <th style="width: 13%;" class="text-center">NID / Birth</th>
+                        <th style="width: 12%;" class="text-center">Join Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in dept_group %}
+                    <tr class="dept-header-row" data-dept="{{ dept.grouper|default:'GENERAL ADMINISTRATION' }}">
+                        <td colspan="9" class="dept-row-header" style="background-color: #e9ecef; font-weight: bold; padding: 8px; border-bottom: 2px solid #ced4da; text-align: left;">
+                            <i class="fas fa-graduation-cap"></i> DEPARTMENT / CLASS: {{ dept.grouper|default:"GENERAL ADMINISTRATION"|upper }} 
+                            <span style="float: right; font-size: 10px; color: #495057;">(Total: {{ dept.list|length }} Records)</span>
+                        </td>
+                    </tr>
+
+                    {% for s in dept.list %}
+                    <tr class="staff-row border-bottom border-light shadow-hover" 
+                        id="row-{{ s.id }}"
+                        data-name="{{ s.first_name|lower }} {{ s.last_name|lower }}" 
+                        data-id="{{ s.staff_id|lower }}" 
+                        data-dept="{{ dept.grouper|default:'GENERAL ADMINISTRATION' }}" 
+                        data-role="{{ s.user_type.name }}" 
+                        data-status="{% if s.is_active %}Active{% else %}Inactive{% endif %}">
+                        
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        
+                        <td class="text-center">
+                            {% if s.profile_image %}
+                                <img src="{{ s.profile_image.url }}" style="width: 28px; height: 28px; border-radius: 4px; border: 0.5px solid #adb5bd; object-fit: cover;">
+                            {% else %}
+                                <div style="width: 28px; height: 28px; background: #e9ecef; border: 0.5px solid #ced4da; border-radius: 4px; margin: auto; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #6c757d;">
+                                    {{ s.first_name|first|upper }}{{ s.last_name|first|upper }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="text-center"><b>{{ s.staff_id|default:"-" }}</b></td>
+                        
+                        <td class="text-start">
+                            <div style="font-weight: bold; font-size: 10.5px; color: #212529;">
+                                {{ s.first_name|upper }} {{ s.last_name|upper }}
+                            </div>
+                            <div style="font-size: 8.5px; color: #495057; margin-top: 2px; line-height: 1.2;">
+                                <strong>F:</strong> {{ s.father_name|default:"N/A" }} | <strong>M:</strong> {{ s.mother_name|default:"N/A" }}
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            <span style="font-weight: bold; font-size: 11px; background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 2px 4px; border-radius: 4px; display: inline-block; min-width: 28px;">
+                                {{ s.designation|default:"-" }}
+                            </span>
+                        </td>
+                        
+                        <td class="text-start" style="font-size: 9.5px; line-height: 1.2;">
+                            <i class="fas fa-phone-alt" style="font-size: 8px; color: #6c757d;"></i> {{ s.phone_number }}<br>
+                            {% if s.email %}
+                                <i class="fas fa-envelope" style="font-size: 8px; color: #6c757d;"></i> <span style="font-size: 9px;">{{ s.email }}</span>
+                            {% else %}
+                                <i class="fas fa-envelope" style="font-size: 8px; color: #dee2e6;"></i> <span style="color: #adb5bd; font-size: 8.5px;">No Email</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="text-center fw-bold" style="color: #dc3545; font-size: 10px;">{{ s.blood_group|default:"-" }}</td>
+                        
+                        <td class="text-center" style="font-size: 9px;">{{ s.nid_number|default:"-" }}</td>
+                        
+                        <td class="text-center" style="font-size: 9px;">{{ s.joining_date|date:"d M Y"|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center" style="padding: 40px; color: #6c757d; font-size: 12px;">
+                            <i class="fas fa-users-slash" style="font-size: 24px; display: block; margin-bottom: 10px; color: #dee2e6;"></i>
+                            No records available based on the search/filter criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- সিগনেচার সেকশন -->
+    <div class="signature-container">
+        <div class="sig-box">PREPARED BY (HR)</div>
+        <div class="sig-box">CHECKED BY (ADMIN)</div>
+        <div class="sig-box">AUTHORIZED SIGNATURE</div>
+    </div>
+</div>
+
+<script>
+    function applyFilters() {
+        const searchText = document.getElementById('staffSearch').value.toLowerCase();
+        const deptFilter = document.getElementById('deptFilter').value;
+        const roleFilter = document.getElementById('roleFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('.staff-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const sid = row.getAttribute('data-id');
+            const dept = row.getAttribute('data-dept');
+            const role = row.getAttribute('data-role');
+            const status = row.getAttribute('data-status');
+
+            const matchesSearch = name.includes(searchText) || sid.includes(searchText);
+            const matchesDept = deptFilter === "" || dept === deptFilter;
+            const matchesRole = roleFilter === "" || role === roleFilter;
+            const matchesStatus = statusFilter === "" || status === statusFilter;
+
+            if (matchesSearch && matchesDept && matchesRole && matchesStatus) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        document.querySelectorAll('.dept-header-row').forEach(header => {
+            const deptName = header.getAttribute('data-dept');
+            const hasVisibleStaff = Array.from(rows).some(r => r.style.display !== 'none' && r.getAttribute('data-dept') === deptName);
+            header.style.display = hasVisibleStaff ? "" : "none";
+        });
+
+        document.getElementById('totalCount').innerText = visibleCount;
+    }
+
+    document.getElementById('staffSearch').addEventListener('input', applyFilters);
+    document.getElementById('deptFilter').addEventListener('change', applyFilters);
+    document.getElementById('roleFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+    function resetStaffFilters() {
+        document.getElementById('staffSearch').value = "";
+        document.getElementById('deptFilter').value = "";
+        document.getElementById('roleFilter').value = "";
+        document.getElementById('statusFilter').value = "";
+        applyFilters();
+    }
+</script>
+{% endblock %}

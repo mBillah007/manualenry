@@ -1,0 +1,279 @@
+{% load static %}
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}</title>
+
+  <!-- ✅ CSS 
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  -->
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+  <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+  <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+  <link href="{% static 'css/tom-select.css' %}" rel="stylesheet"> 
+  {% block extra_css %}{% endblock %}
+    <style>      
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body > .d-flex {
+        min-height: 100vh;
+      }
+
+      /* অফলাইন ফন্ট কনফিগারেশন */
+      @font-face {
+          font-family: 'BanglaHeader';
+          src: url("{% static 'fonts/HindSiliguri-Bold.ttf' %}") format('truetype');
+      }
+      @font-face {
+          font-family: 'SolaimanLipi';
+          src: url("{% static 'fonts/SolaimanLipi.ttf' %}") format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+
+      .container-fluid.flex-grow-1 {
+        flex: 1;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      @media (min-width: 768px) {
+        main {
+          padding-left: 2rem;
+          padding-right: 2rem;
+        }
+        body {
+          font-size: 1rem;
+        }
+      }
+
+      header .btn-light {
+        background-color: transparent;
+        border: none;
+      }
+      header .badge {
+        font-size: 0.6rem;
+        padding: 0.25em 0.4em;
+      }
+
+      .sidebar {
+        width: 300px;
+        transition: width 0.3s ease;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+      .sidebar .nav-link.active {
+        background-color: var(--bs-primary-subtle);
+        color: var(--bs-primary);
+        font-weight: bold;
+        border-radius: 0.375rem;
+      }
+
+      /* Collapsed sidebar (desktop) */
+      @media (min-width: 768px) {
+        .collapsed-sidebar {
+          width: 70px;
+        }
+        .collapsed-sidebar .sidebar-text,
+        .collapsed-sidebar .sidebar-title {
+          display: none;
+        }
+        .collapsed-sidebar .nav-link,
+        .collapsed-sidebar .accordion-button {
+          justify-content: center;
+          padding: 0.75rem;
+        }
+        .collapsed-sidebar .nav-link i,
+        .collapsed-sidebar .accordion-button i {
+          font-size: 1.4rem;
+          margin: 0;
+        }
+        .collapsed-sidebar .nav-link.active {
+          background-color: var(--bs-primary);
+          color: #fff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          margin: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .collapsed-sidebar .accordion-button::after {
+          display: none;
+        }
+      }
+      /* Sidebar mobile */
+      @media (max-width: 767px) {
+        #sidebar {
+          position: fixed;
+          top: 56px;
+          left: 0;
+          width: 250px;
+          height: calc(100vh - 56px);
+          background-color: #f8f9fa;
+          z-index: 1050;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+          display: flex;
+          flex-direction: column;
+        }
+
+        #sidebar.show {
+          transform: translateX(0);
+        }
+
+        #sidebar .sidebar-scroll {
+          flex-grow: 1;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+
+
+      li.nav-item.w-100 { list-style-type: none; }
+      .modal-success .modal-content {
+        animation: pulseSuccess 0.6s ease-in-out;
+      }
+      @keyframes pulseSuccess {
+        0% { transform: scale(1); background-color: #d1e7dd; }
+        50% { transform: scale(1.02); background-color: #bcd0c7; }
+        100% { transform: scale(1); background-color: #fff; }
+      }
+      #imageDropZone.dragover {
+        background-color: #e0f7fa;
+        border-color: #17a2b8;
+      }
+      .list-group-item-action.active {
+        background-color: #0d6efd;
+        color: white;
+      }
+      #supplierSuggestions {
+        top: 100%;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1055;
+      }
+      .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+      }
+      .fade-out {
+        animation: fadeOut 1s forwards;
+      }
+
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; height: 0; padding: 0; margin: 0; }
+      }
+    .table-highlight {
+      background-color: #d1e7dd !important; /* হালকা সবুজ */
+      transition: background-color 1s ease;
+    }
+
+    </style>
+  </head>
+  <body>
+    <div class="d-flex flex-column min-vh-100">
+      {% include 'mainsystem/partials/header.html' %}
+      <div class="container-fluid flex-grow-1">
+        <div class="row flex-nowrap">
+          {% include 'mainsystem/partials/sidebar.html' %}
+          <main class="col py-4 px-3">
+            {% block content %}{% endblock %}
+          </main>
+        </div>
+      </div>
+      <footer class="bg-light border-top py-3 mt-auto">
+        <div class="container-fluid px-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+          <span class="text-muted small">© {{ now|date:"Y" }} ধুমকেতু সফট — সর্বস্বত্ব সংরক্ষিত</span>
+          <div class="d-flex gap-3 mt-2 mt-md-0">
+            <a href="#" class="text-muted small text-decoration-none">গোপনীয়তা</a>
+            <a href="#" class="text-muted small text-decoration-none">শর্তাবলী</a>
+            <a href="#" class="text-muted small text-decoration-none">সহায়তা</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    {% include 'mainsystem/includes/toast.html' %}
+     <div id="modalContainer"></div>
+    <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;"></div>
+
+    <!-- ✅ JS: Load in correct order --
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script> -->
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script> 
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script> 
+    <script src="{% static 'js/select2.min.js' %}"></script>
+    <script src="{% static 'js/chart.js' %}"></script>
+    <script src="{% static 'js/sweetalert2@11.js' %}"></script>
+    <script src="{% static 'js/JsBarcode.code128.min.js' %}"></script>
+    <script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+    <script src="{% static 'js/index.global.min.js' %}"></script>
+    <script src="{% static 'mainsystem/js/profile_password.js' %}"></script>
+
+    <script>
+      document.querySelectorAll('.toast').forEach(t => new bootstrap.Toast(t, { delay: 3000 }).show());
+      document.addEventListener("DOMContentLoaded", function () {
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileToggle = document.getElementById('mobileSidebarToggle');
+        const backdrop = document.getElementById('sidebarBackdrop');
+
+        if (sidebar && sidebarToggle && mobileToggle && backdrop) {
+          if (window.innerWidth >= 768 && localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('collapsed-sidebar');
+          }
+
+          sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed-sidebar');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed-sidebar'));
+          });
+
+          mobileToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            backdrop.classList.toggle('show');
+          });
+
+          document.addEventListener('click', function (e) {
+            if (window.innerWidth <= 767 && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+              sidebar.classList.remove('show');
+              backdrop.classList.remove('show');
+            }
+          });
+        }
+
+        // Global select2 init
+        if (window.jQuery && $.fn.select2) {
+          $('.select2').select2({
+            width: '100%',
+            placeholder: 'Select an option',
+            allowClear: true
+          });
+        } else {
+          console.warn("⚠️ jQuery or Select2 not loaded properly.");
+        }
+      });
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

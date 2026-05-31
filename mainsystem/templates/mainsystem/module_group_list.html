@@ -1,0 +1,46 @@
+
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>নাম</th>
+              <th>আইকন</th>
+              <th>ক্রম</th>
+              <th class="text-center">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody id="groupTableBody">
+            {% for group in groups %}
+            <tr>
+              <td>{{ group.name }}</td>
+              <td><i class="{{ group.icon }}"></i> <code>{{ group.icon }}</code></td>
+              <td>{{ group.order }}</td>
+              <td class="text-center">
+                {% if can_edit_module_group %}
+                  <button class="btn btn-sm btn-warning edit-group-btn"
+                          data-group='{
+                            "id": "{{ group.id }}",
+                            "name": "{{ group.name|escapejs }}",
+                            "icon": "{{ group.icon|escapejs }}",
+                            "order": "{{ group.order }}"
+                          }'>✏️</button>
+                {% else %}
+                  <span class="text-muted small">🔒</span>
+                {% endif %}
+                {% if can_delete_module_group %}
+                  <form method="POST" action="{% url 'mainsystem:module_group_delete' group.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('আপনি কি {{ group.name }} গ্রুপটি মুছে ফেলতে চান?')">
+                      🗑️
+                    </button>
+                  </form>
+                {% endif %}
+
+              </td>
+
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">কোনো গ্রুপ পাওয়া যায়নি</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>

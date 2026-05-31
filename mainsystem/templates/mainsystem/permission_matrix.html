@@ -1,0 +1,151 @@
+{% extends 'mainsystem/base.html' %}
+{% load custom_tags %}
+{% block content %}
+<div class="container">
+  <h4 class="fw-bold text-primary mb-3">🔐 পারমিশন ম্যাট্রিক্স</h4>
+
+  <form id="permissionMatrixForm">
+     {% csrf_token %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <select id="roleSelector" class="form-select w-auto" onchange="loadMatrixForRole(this.value)">
+        {% for role in roles %}
+          <option value="{{ role.id }}" {% if role.id == selected_role.id %}selected{% endif %}>{{ role.name }}</option>
+        {% endfor %}
+      </select>
+
+
+      <div>
+        <button type="button" class="btn btn-success" onclick="grantFullAccess()">🔐 Give Full Access</button>
+        <button type="button" class="btn btn-danger ms-2" onclick="revokeAllAccess()">🚫 Revoke All Access</button>
+      </div>
+    </div>
+
+    {% for group, modules in grouped_modules.items %}
+      <div class="accordion mb-3" id="accordion-{{ forloop.counter }}">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="false"
+                    aria-controls="collapse-{{ forloop.counter }}">
+              {{ group }}
+            </button>
+          </h2>
+          <div id="collapse-{{ forloop.counter }}" class="accordion-collapse collapse"
+               aria-labelledby="heading-{{ forloop.counter }}" data-bs-parent="#accordion-{{ forloop.counter }}">
+            <div class="accordion-body">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>মডিউল</th>
+                    {% for action in actions %}
+                      <th>{{ action.name_bn }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for module in modules %}
+                    <tr>
+                      <td>
+                        {{ module.name }}
+                        <span class="badge bg-success ms-2">{{ module.allowed_count }} ✅</span>
+                        <span class="badge bg-danger ms-1">{{ module.denied_count }} ❌</span>
+                      </td>
+                      {% for action in actions %}
+                        <td>
+                          <input type="checkbox"
+                                data-role="{{ selected_role.id }}"
+                                data-module="{{ module.id }}"
+                                data-action="{{ action.id }}"
+                                {% if module.permission_map|dict_get:action.id %}checked{% endif %}
+                                {% if selected_role.is_protected %}disabled{% endif %}>
+                        </td>
+                      {% endfor %}
+                    </tr>
+
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </form>
+</div>
+
+<script>
+  function getCSRF() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  function showToast(msg, type = 'success') {
+    alert(msg); // Replace with Bootstrap toast if available
+  }
+  
+  function loadMatrixForRole(roleId) {
+    window.location.href = `/mainsystem/permissions/matrix/?role_id=${roleId}`;
+  }
+
+  function reloadPermissionMatrix() {
+    location.reload();
+  }
+
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function () {
+      const payload = {
+        role_id: this.dataset.role,
+        module_id: this.dataset.module,
+        action_id: this.dataset.action,
+        is_allowed: this.checked
+      };
+
+      fetch('/mainsystem/permissions/update/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRF()
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        showToast(data.success ? '✅ অনুমতি সংরক্ষিত হয়েছে' : '❌ সংরক্ষণ ব্যর্থ');
+      });
+    });
+  });
+
+  function grantFullAccess() {
+    const roleId = document.getElementById('roleSelector').value;
+    fetch('/mainsystem/permissions/grant_all/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRF()
+      },
+      body: JSON.stringify({ role_id: roleId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      showToast('✅ সব অনুমতি সফলভাবে দেওয়া হয়েছে');
+      reloadPermissionMatrix();
+    });
+  }
+
+  function revokeAllAccess() {
+    const roleId = document.getElementById('roleSelector').value;
+    fetch('/mainsystem/permissions/revoke_all/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRF()
+      },
+      body: JSON.stringify({ role_id: roleId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      showToast('✅ সব অনুমতি বাতিল করা হয়েছে');
+      reloadPermissionMatrix();
+    });
+  }
+</script>
+{% endblock %}

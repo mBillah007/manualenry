@@ -1,0 +1,79 @@
+{% load static %}
+<style>
+    @media print {
+        @page { size: A4; margin: 0; }
+        .no-print { display: none !important; }
+        .invoice-container { border: none !important; padding: 0.35in !important; box-shadow: none !important; }
+    }
+    
+    .invoice-container {
+        width: 8.27in; min-height: 11.69in; margin: auto; padding: 0.45in;
+        background: white; position: relative; font-family: 'Segoe UI', Tahoma, sans-serif; color: #000;
+        border: 1px solid #ddd;
+    }
+
+    /* আপনার দেওয়া ইনভয়েস হেডার স্টাইল */
+    .header-box { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+    .header-logo { width: 65px; }
+    .header-text { flex: 1; text-align: center; padding-right: 65px; }
+    .header-text h4 { margin: 0; font-size: 19px; font-weight: bold; text-transform: uppercase; }
+
+    /* বারকোড রো */
+    .barcode-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+    .copy-label { border: 1.5px solid #000; padding: 2px 12px; font-size: 11px; font-weight: bold; background: #fff; }
+
+    /* ডাটা টেবিল */
+    .section-title { background: #333; color: white; padding: 4px 10px; font-size: 11px; font-weight: bold; margin-top: 15px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
+    .data-table th, .data-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    
+    .footer-sig { position: absolute; bottom: 60px; left: 0.45in; right: 0.45in; display: flex; justify-content: space-between; font-size: 11px; }
+    .sig-line { border-top: 1.5px solid #000; width: 130px; text-align: center; padding-top: 4px; }
+</style>
+
+<div class="invoice-container">
+    <div class="header-box">
+        <div class="header-logo"><img src="{% static 'images/hc_logo.jpeg' %}" height="60"></div>
+        <div class="header-text">
+            <h4>Human Care Hospital & Diagnostic Rangpur</h4>
+            <p style="font-size: 10px; margin:0;">Dhap Kakoli Lane, Rangpur | Hotline: 01898 936102</p>
+        </div>
+    </div>
+
+    <div class="barcode-row">
+        <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text=STAFF-REPORT&scale=2&height=10">
+        <div class="copy-label">OFFICIAL STAFF REPORT</div>
+        <div style="font-size: 10px; font-weight: bold;">Date: {{ print_time|date:"d/m/y h:i A" }}</div>
+    </div>
+
+    <div class="section-title">STAFF INFORMATION LIST</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">SL</th>
+                <th>Staff Name</th>
+                <th>Designation</th>
+                <th>Department</th>
+                <th>Phone Number</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in staffs %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                <td>{{ s.designation }}</td>
+                <td>{{ s.department.name }}</td>
+                <td>{{ s.mobile_number }}</td>
+                <td style="font-weight: bold;">{{ s.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer-sig">
+        <div class="sig-line">Prepared By</div>
+        <div class="sig-line">Authorized Signature</div>
+    </div>
+</div>

@@ -1,0 +1,211 @@
+{% extends 'mainsystem/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Professional Enterprise Theme */
+    .profile-bg { background-color: #f0f2f5; min-height: 100vh; }
+    .card-profile { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .avatar-wrapper { position: relative; margin-top: -75px; }
+    .avatar-main { 
+        width: 140px; height: 140px; 
+        border: 5px solid #fff; 
+        object-fit: cover; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+    }
+    .info-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .info-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+    .section-title { font-size: 16px; font-weight: 900; color: #000; border-left: 4px solid #0d6efd; padding-left: 10px; margin-bottom: 20px; }
+    
+    /* Input Styling */
+    .form-control-sharp { 
+        border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 15px; 
+        font-size: 14px; transition: all 0.3s;
+    }
+    .form-control-sharp:focus { 
+        border-color: #0d6efd; box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1); 
+    }
+</style>
+
+<div class="profile-bg py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h4 class="fw-black text-uppercase mb-1">User Profile</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0 small fw-bold">
+                        <li class="breadcrumb-item"><a href="{% url 'mainsystem:user_list' %}" class="text-dark">Users</a></li>
+                        <li class="breadcrumb-item active text-primary">@{{ target_user.username }}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'mainsystem:user_list' %}" class="btn btn-white border-dark fw-bold rounded-pill px-4 btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i> Back
+                </a>
+                <button class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm btn-sm" data-bs-toggle="collapse" data-bs-target="#editProfileCollapse">
+                    <i class="fas fa-user-edit me-1"></i> Modify Profile
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card card-profile overflow-hidden border-top border-5 border-primary">
+                    <div class="bg-primary" style="height: 100px;"></div>
+                    <div class="card-body text-center p-4">
+                        <div class="avatar-wrapper mb-3 text-center">
+                            {% if profile.profile_image %}
+                                <img src="{{ profile.profile_image.url }}" class="rounded-circle avatar-main">
+                            {% else %}
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto avatar-main border border-2">
+                                    <span class="display-4 fw-black text-primary">{{ target_user.username|first|upper }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="fw-black mb-1">{{ profile.first_name }} {{ profile.last_name }}</h5>
+                        <p class="text-primary small fw-bold mb-3 text-uppercase letter-spacing-tight">
+                            {{ profile.designation|default:"Staff Member" }}
+                        </p>
+
+                        <div class="d-flex justify-content-around border-top border-bottom py-3 mb-4">
+                            <div class="text-center">
+                                <div class="fw-black h6 mb-0">{% now "Y" %}</div>
+                                <small class="text-muted x-small fw-bold uppercase">Session</small>
+                            </div>
+                            <div class="text-center border-start border-end px-4">
+                                <div class="fw-black h6 mb-0 text-success">Active</div>
+                                <small class="text-muted x-small fw-bold uppercase">Status</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="fw-black h6 mb-0">{{ profile.department.name|default:"Gen"|truncatechars:5 }}</div>
+                                <small class="text-muted x-small fw-bold uppercase">Dept</small>
+                            </div>
+                        </div>
+
+                        <div class="text-start">
+                            <div class="mb-3">
+                                <label class="info-label">Account Identity</label>
+                                <div class="info-value"><i class="fas fa-at me-2 text-muted"></i>{{ target_user.username }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="info-label">Email Address</label>
+                                <div class="info-value"><i class="fas fa-envelope me-2 text-muted"></i>{{ target_user.email }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card card-profile mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="section-title">Personal Details</h6>
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <label class="info-label">Mobile Number</label>
+                                    <div class="info-value text-primary"><i class="fas fa-phone-alt me-2"></i>{{ profile.mobile_number|default:"Not Provided" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <label class="info-label">Date of Birth</label>
+                                    <div class="info-value"><i class="fas fa-calendar-day me-2"></i>{{ profile.date_of_birth|date:"d M, Y"|default:"Not Set" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded-3">
+                                    <label class="info-label">Permanent Residence</label>
+                                    <div class="info-value"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.address|default:"No address registered in the system." }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="section-title">Emergency Contact</h6>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="p-3 border border-danger border-opacity-10 rounded-3 bg-danger bg-opacity-10">
+                                    <label class="info-label text-danger">Contact Person</label>
+                                    <div class="info-value fw-black">{{ profile.emergency_contact|default:"N/A" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border border-danger border-opacity-10 rounded-3 bg-danger bg-opacity-10">
+                                    <label class="info-label text-danger">Emergency Phone</label>
+                                    <div class="info-value fw-black text-danger">{{ profile.emergency_phone|default:"N/A" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="collapse" id="editProfileCollapse">
+                    <div class="card card-profile border-top border-4 border-primary mb-4">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-black text-uppercase m-0">Edit Profile Information</h5>
+                                <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#editProfileCollapse"></button>
+                            </div>
+                            
+                            <form method="POST" enctype="multipart/form-data" action="{% url 'mainsystem:profile_view' user_id=target_user.id %}">
+                                {% csrf_token %}
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="info-label mb-2">First Name</label>
+                                        {{ form.first_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="info-label mb-2">Last Name</label>
+                                        {{ form.last_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="info-label mb-2">Designation / Role</label>
+                                        {{ form.designation }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="info-label d-flex justify-content-between mb-2">
+                                            Department
+                                            <a href="#" class="text-primary text-decoration-none x-small fw-black" data-bs-toggle="modal" data-bs-target="#departmentModal">+ New Dept</a>
+                                        </label>
+                                        {{ form.department }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="info-label mb-2">Phone Number</label>
+                                        {{ form.mobile_number }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="info-label mb-2">Date of Birth</label>
+                                        {{ form.date_of_birth }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="info-label mb-2">Upload Profile Image</label>
+                                        <div class="input-group">
+                                            {{ form.profile_image }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-5 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-toggle="collapse" data-bs-target="#editProfileCollapse">Cancel</button>
+                                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-5 shadow">Update Records</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'mainsystem/modals/add_department.html' %}
+
+<script>
+    // Form control class adding (Optional if not added in forms.py)
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        el.classList.add('form-control-sharp');
+        el.classList.add('form-control');
+    });
+</script>
+{% endblock %}

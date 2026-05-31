@@ -1,0 +1,192 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/tom-select.css' %}" rel="stylesheet">
+    <style>
+        /* অফলাইন ফন্ট কনফিগারেশন */
+        @font-face {
+            font-family: 'BanglaHeader';
+            src: url("{% static 'fonts/HindSiliguri-Bold.ttf' %}") format('truetype');
+        }
+        @font-face {
+            font-family: 'SolaimanLipi';
+            src: url("{% static 'fonts/SolaimanLipi.ttf' %}") format('truetype');
+            font-weight: normal; font-style: normal;
+        }
+    /* প্যাড প্রিন্টের জন্য বিশেষ সিএসএস */
+        @media print {
+            /* যখন বডিতে 'hide-header-on-print' ক্লাস থাকবে, তখন টেবিল হেডার ইনভিজিবল হবে কিন্তু জায়গা ধরে রাখবে */
+            .hide-header-on-print .hospital-header-table { 
+                visibility: hidden !important; 
+                opacity: 0 !important;
+            }
+            
+            /* মেইন বডির মার্জিন অ্যাডজাস্টমেন্ট (প্যাডের জন্য) */
+            .hide-header-on-print .main-body {
+                margin-top: 10px; 
+            }
+        }
+
+        /* প্রিন্ট কন্ট্রোল প্যানেল স্টাইল */
+        .print-ctrl-bar {
+            background: #34495e;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; padding: 0; background: #f4f4f4; }
+
+        /* ১. ১৯০ মিমি ফিক্সড উইডথ কন্টেইনার */
+        .report-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 190mm; /* আপনার রিকোয়ারমেন্ট অনুযায়ী ফিক্সড */
+            margin: 0 auto;
+            background: white;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        .main-body { flex: 1 0 auto; padding: 0 10px; }
+
+        /* ২. হেডার টেবিল ফিক্সড ১৯০ মিমি */
+        .hospital-header-table {
+            width: 100%;
+            table-layout: fixed; 
+            border-collapse: collapse;
+            border-bottom: 3px solid #000;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .logo-cell { width: 12%; text-align: left; vertical-align: middle; padding: 5px; }
+        .name-cell { width: 68%; padding: 0 10px; vertical-align: middle; text-align: center;}
+        .contact-cell { 
+            width: 20%; border-left: 2px solid #000; 
+            padding-left: 10px; vertical-align: middle; 
+            text-align: right; line-height: 1.2;
+        }
+
+        .hosp-bn { font-family: 'BanglaHeader', sans-serif; font-size: 20px; font-weight: 900; margin: 0; }
+        .hosp-en { font-size: 19px; font-weight: 900; margin: 2px 0; }
+        .header-hr { border: 0; border-top: 1.5px solid #000; margin: 3px 0; width: 100%; }
+        .hosp-slogan { font-family: 'SolaimanLipi', sans-serif; font-size: 14px; font-style: italic; font-weight: bold; text-align: right; }
+
+        .c-small { font-family: 'SolaimanLipi', sans-serif; font-size: 8px; font-weight: 700; margin: 0; }
+        .c-hotline { font-size: 14px; font-weight: 900; margin: 2px 0; }
+        .c-email { font-size: 7.5px; font-weight: 600; border-top: 1.2px solid #000; display: inline-block; padding-top: 2px; }
+
+
+        /* ৩. ফুটার */
+        .report-footer-final {
+            flex-shrink: 0;
+            border-top: 2px solid #000;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: none; }
+            .report-wrapper { width: 190mm !important; margin: 0 auto; border: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-wrapper">
+        <table class="hospital-header-table">
+            <tr>
+                <td class="logo-cell">
+                    <img src="{% static 'images/hc_logo.jpeg' %}" style="width: 75px; height: 75px; object-fit: contain;">
+                </td>
+                <td class="name-cell">
+                    <div class="hosp-bn">হিউম্যান কেয়ার হাসপাতাল অ্যান্ড ডায়াগনস্টিক রংপুর</div>
+                    <div class="hosp-en">Human Care Hospital & Diagnostic Rangpur</div>
+                    <hr class="header-hr">
+                    <div class="hosp-slogan">নিশ্চয়তা, নির্ভরতা, আজীবন...</div>
+                </td>
+                <td class="contact-cell">
+                    <p class="c-small">Dhap Kakoli Lane, Rangpur.</p>
+                    <p class="c-small" style="font-size: 12px;">ধাপ কাকলী লেন, রংপুর</p>
+                    <div class="c-hotline">01898 936101 <br> 01898 936102</div>
+                    <div class="c-email">humancare.hospital2025@gmail.com</div>
+                </td>
+            </tr>
+        </table>
+        <div class="print-ctrl-bar no-print">
+
+            <label style="cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="headerToggle" onchange="toggleHeaderFunc()" style="width: 18px; height: 18px;"> 
+                প্যাডে প্রিন্ট করুন (হেডার লুকান)
+            </label>            
+            <div class="control-group">
+                <label>Orientation:</label>
+                <select id="orientation" onchange="changeOrientation(this.value)" class="form-select-sm">
+                    <option value="portrait-mode">Portrait</option>
+                    <option value="landscape-mode" selected>Landscape</option>
+                </select>
+            </div>
+            <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 6px 20px; font-weight: bold; cursor: pointer; border-radius: 4px;">
+                🖨️ প্রিন্ট করুন
+            </button>
+        </div>
+
+        <script>
+            
+            // ১. ওরিয়েন্টেশন পরিবর্তন লজিক
+            function changeOrientation(val) {
+                const style = document.createElement('style');
+                style.innerHTML = `@media print { @page { size: ${val === 'landscape-mode' ? 'A4 landscape' : 'A4 portrait'}; } }`;
+                
+                // আগের স্টাইল রিমুভ করে নতুনটা অ্যাড করা
+                const oldStyle = document.getElementById('dynamic-page-setup');
+                if(oldStyle) oldStyle.remove();
+                
+                style.id = 'dynamic-page-setup';
+                document.head.appendChild(style);
+            }
+
+            function toggleHeaderFunc() {
+                const isChecked = document.getElementById('headerToggle').checked;
+                if (isChecked) {
+                    document.body.classList.add('hide-header-on-print');
+                } else {
+                    document.body.classList.remove('hide-header-on-print');
+                }
+            }          
+
+            // ডিফল্ট সেটআপ (উইন্ডো লোড হলে)
+            window.onload = function() {
+                changeOrientation('landscape-mode');
+            };
+        </script>
+        <div class="main-body">
+            {% block report_body %}{% endblock %}
+        </div>
+
+        <div class="report-footer-final">
+            <div>Printed by: {{ request.user.username }}</div>
+            <div>Developed by <b>Dhumketu SOFT</b> | Dynamic ICT</div>
+            <div>Printed on: {% now "d M Y, h:i A" %}</div>
+        </div>
+    </div>
+</body>
+</html>

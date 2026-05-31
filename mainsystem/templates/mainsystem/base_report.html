@@ -1,0 +1,257 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/tom-select.css' %}" rel="stylesheet"> 
+    <style>
+        /* ১. ফন্ট সেটিংস */
+        @font-face {
+            font-family: 'BanglaHeader';
+            src: url("{% static 'fonts/HindSiliguri-Bold.ttf' %}") format('truetype');
+        }
+        @font-face {
+            font-family: 'SolaimanLipi';
+            src: url("{% static 'fonts/SolaimanLipi.ttf' %}") format('truetype');
+            font-weight: normal; font-style: normal;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0 auto; padding: 0; background: #f4f4f4; }
+
+        /* প্রিন্ট কন্ট্রোল প্যানেল */
+        .print-ctrl-bar {
+            background: #34495e; color: white; padding: 10px;
+            display: flex; justify-content: center; gap: 20px;
+            align-items: center; position: sticky; top: 0; z-index: 9999;
+        }
+
+        /* মেইন র্যাপার */
+        .report-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0 auto;
+            background: white;
+            padding: 10mm;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            transition: width 0.3s ease;
+        }
+
+        /* স্ক্রিন ভিউ এর জন্য উইডথ কন্ট্রোল */
+        .view-portrait { width: 210mm; }
+        .view-landscape { width: 297mm; }
+
+        .main-body { flex: 1 0 auto; width: 100%; }
+
+        /* হাসপাতাল হেডার */
+        .header-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .hospital-header-table {
+            width: 100%;
+            table-layout: fixed; 
+            border-collapse: collapse;
+            border-bottom: 3px solid #000;
+        }
+
+        .logo-cell { width: 12%; text-align: left; vertical-align: middle; padding: 5px; }
+        .name-cell { width: 68%; padding: 0 10px; vertical-align: middle; text-align: center;}
+        .contact-cell { 
+            width: 25%; border-left: 2px solid #000; 
+            padding-left: 10px; vertical-align: middle; 
+            text-align: right; line-height: 1.2;
+        }
+
+        .hosp-bn { font-family: 'BanglaHeader', sans-serif; font-size: 20px; font-weight: 900; margin: 0; }
+        .hosp-en { font-size: 19px; font-weight: 900; margin: 2px 0; }
+        .header-hr { border: 0; border-top: 1.5px solid #000; margin: 3px 0; width: 100%; }
+        .hosp-slogan { font-family: 'SolaimanLipi', sans-serif; font-size: 14px; font-style: italic; font-weight: bold; text-align: right; }
+
+        .c-small { font-family: 'SolaimanLipi', sans-serif; font-size: 10px; font-weight: 700; margin: 0; }
+        .c-hotline { font-size: 14px; font-weight: 900; margin: 2px 0; }
+        .c-email { font-size: 9px; font-weight: 600; border-top: 1.2px solid #000; display: inline-block; padding-top: 2px; }
+
+        /* প্যাড প্রিন্ট স্পেসার */
+        .pad-spacer {
+            display: none;
+            height: 35mm;
+            width: 100%;
+        }
+
+        /* ফুটার */
+        .report-footer-final {
+            flex-shrink: 0;
+            border-top: 2px solid #000;
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* প্রিন্ট মিডিয়া সেটিংস */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: none; margin: 0; padding: 0; }
+            .report-wrapper { 
+                margin: 0 !important; 
+                padding: 5mm !important; 
+                width: 100% !important; 
+                box-shadow: none !important;
+            }
+            
+            /* প্যাড প্রিন্ট লজিক */
+            .hide-header-on-print .header-container { display: none !important; }
+            .hide-header-on-print .pad-spacer { display: block !important; }
+        }
+    </style>
+</head>
+<body id="mainBody"> 
+
+    <div class="print-ctrl-bar no-print">
+        <label style="font-family: 'SolaimanLipi'; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="headerToggle" onchange="toggleHeaderFunc()" style="width: 18px; height: 18px;"> 
+            প্যাডে প্রিন্ট (জায়গা ফাঁকা রাখুন)
+        </label>
+
+        <div style="display: flex; align-items: center; gap: 10px;font-family: 'SolaimanLipi';">
+            <span style="font-weight: bold;">সাইজ:</span>
+            <select id="pageSize" onchange="updatePageSetup()" style="font-family: 'SolaimanLipi'; padding: 4px; border-radius: 4px;">
+                <option value="A4">A4</option>
+                <option value="Legal">Legal</option>
+                <option value="A5">A5</option>
+            </select>
+            <span style="font-weight: bold;">ওরিয়েন্টেশন:</span>
+            <select id="orientationDropdown" onchange="updatePageSetup()" style="font-family: 'SolaimanLipi'; padding: 4px; border-radius: 4px;">
+                <option value="portrait">Portrait</option>
+                <option value="landscape" selected>Landscape</option>
+            </select>
+        </div>
+
+        <button onclick="triggerPrint()" style="font-family: 'SolaimanLipi';background: #27ae60; color: white; border: none; padding: 6px 20px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 14px;">
+            🖨️ প্রিন্ট করুন
+        </button>
+    </div>
+
+    <div class="report-wrapper view-landscape" id="reportWrapper">
+        <div class="pad-spacer"></div>
+
+        <div class="header-container">
+            <table class="hospital-header-table">
+                <tr>
+                    <td class="logo-cell">
+                        <img src="{% static 'images/dhumketu_logo.png' %}" style="width: 75px; height: 75px; object-fit: contain;">
+                    </td>
+                    <td class="name-cell">
+                        <div class="hosp-bn">আমতলা বিদ্যাপীঠ এন্ড কলেজ </div>
+                        <div class="hosp-en">Amtala Biddapith & College</div>
+                        <hr class="header-hr">
+                        <div class="hosp-slogan">সততা, নিয়মানুবর্তিতা, অধ্যাবসায়...</div>
+                    </td>
+                    <td class="contact-cell">
+                        <p class="c-small">Amtala, Mahiganj, Rangpur.</p>
+                        <p class="c-small" style="font-size: 12px;">আমতলা, মাহিগঞ্জ, রংপুর</p>
+                        <div class="c-hotline">01712 803364 <br> 01713 769485</div>
+                        <div class="c-email">amatalabiddapith@gmail.com</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="main-body">
+            {% block report_body %}{% endblock %}
+        </div>
+
+        <div class="report-footer-final">
+            <div>Printed by: {{ request.user.username }}</div>
+            <div> <i>"PunchTime" </i>Developed by <b>Dhumketu SOFT</b> | Dynamic ICT</div>
+            <div>Printed on: {% now "d M Y, h:i A" %}</div>
+        </div>
+    </div>
+
+    <script>
+    // ১. প্যাড মোড এবং হেডার টগল
+    function toggleHeaderFunc() {
+        const isChecked = document.getElementById('headerToggle').checked;
+        const body = document.getElementById('mainBody');
+        if(isChecked) {
+            body.classList.add('hide-header-on-print');
+        } else {
+            body.classList.remove('hide-header-on-print');
+        }
+    }
+
+    // ২. লেআউট আপডেট (স্ক্রিন ভিউ এর জন্য)
+    function updatePageSetup() {
+        const mode = document.getElementById('orientationDropdown').value;
+        const wrapper = document.getElementById('reportWrapper');
+        
+        if (mode === 'landscape') {
+            wrapper.classList.remove('view-portrait');
+            wrapper.classList.add('view-landscape');
+        } else {
+            wrapper.classList.remove('view-landscape');
+            wrapper.classList.add('view-portrait');
+        }
+    }
+
+    // ৩. রিফাইনড প্রিন্টিং লজিক (যা প্রিন্ট ডায়ালগে পরিবর্তন আনবে)
+    function triggerPrint() {
+        const size = document.getElementById('pageSize').value;
+        const mode = document.getElementById('orientationDropdown').value;
+        
+        // পুরাতন ডায়নামিক স্টাইল থাকলে মুছে ফেলা
+        const oldStyle = document.getElementById('dynamic-print-config');
+        if (oldStyle) oldStyle.remove();
+
+        // নতুন @page স্টাইল তৈরি
+        const printStyle = document.createElement('style');
+        printStyle.id = 'dynamic-print-config';
+        
+        /* 
+           এখানে !important ব্যবহার করা হয়েছে যাতে ব্রাউজারের 
+           ডিফল্ট সেটিংস ওভাররাইড হয়।
+        */
+        printStyle.innerHTML = `
+            @media print {
+                @page { 
+                    size: ${size} ${mode} !important; 
+                    margin: 8mm !important; 
+                }
+                body { 
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            }
+        `;
+        document.head.appendChild(printStyle);
+
+        // ব্রাউজারকে নতুন স্টাইল প্রসেস করার সময় দিতে ১০০ মিলিসেকেন্ড ডিলে
+        setTimeout(() => {
+            window.print();
+        }, 150);
+    }
+
+    // পেজ লোড হওয়ার পর ডিফল্ট লেআউট সেট করা
+    window.onload = updatePageSetup;
+</script>
+
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script> 
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script> 
+    <script src="{% static 'js/select2.min.js' %}"></script>
+    <script src="{% static 'js/sweetalert2@11.js' %}"></script>
+</body>
+</html>

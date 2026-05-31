@@ -1,0 +1,277 @@
+{% extends 'mainsystem/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block content %}
+
+{% can_create 'mainsystem:user_create' as can_create %}
+{% can_edit 'mainsystem:user_edit' as can_edit_user %}
+{% can_delete 'mainsystem:user_delete' as can_delete_user %}
+
+<div class="container-fluid py-4" style="background: #f0f2f5; min-vh-100;">
+    
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <h3 class="fw-bold text-dark mb-1">User Management</h3>
+            <p class="text-muted">সিস্টেম অ্যাক্সেস এবং ইউজার প্রোফাইল নিয়ন্ত্রণ করুন</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            {% if can_create %}
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold border-0" 
+                    style="background: linear-gradient(45deg, #4e73df, #224abe);"
+                    data-bs-toggle="modal" data-bs-target="#userModal" id="addUserBtn">
+                <i class="bi bi-person-plus-fill me-2"></i>Create User
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="userSearch" class="form-control bg-light border-0" placeholder="Search by name, email or dept...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="roleFilter" class="form-select bg-light border-0">
+                        <option value="">All Roles</option>
+                        {% for r in roles %}<option value="{{ r.name }}">{{ r.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select bg-light border-0">
+                        <option value="">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100 border-0" onclick="resetFilters()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="userTable">
+                <thead class="bg-light">
+                    <tr class="text-muted small text-uppercase">
+                        <th class="ps-4 py-3">Identity</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th class="text-center">Privileges</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr class="user-row border-bottom border-light shadow-hover">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3">{{ u.username|first|upper }}</div>
+                                <div>
+                                    <span class="d-block fw-bold text-dark search-target">{{ u.username }}</span>
+                                    <small class="text-muted">{{ u.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="dept-target">{{ u.profile.department.name|default:"General" }}</td>
+                        <td>
+                            <span class="badge bg-soft-primary text-primary role-target">{{ u.role.name }}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1">
+                                {% if u.is_superuser %}<span class="badge bg-dark" title="Superuser">👑 Admin</span>{% endif %}
+                                {% if u.is_staff %}<span class="badge bg-warning text-dark" title="Staff">🛠️ Staff</span>{% endif %}
+                                {% if u.is_protected %}<span class="badge bg-info text-dark" title="Protected">🛡️ Sec</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="status-target d-none">{% if u.is_active %}Active{% else %}Inactive{% endif %}</div>
+                            {% if u.is_active %}
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3">
+                                    <span class="pulse-dot"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group shadow-sm rounded-pill overflow-hidden bg-white">
+                                <a href="{% url 'hrm:staff_biodata' id=u.id %}" class="btn btn-link btn-sm text-primary border-end px-3" title="View Profile" target="_blank">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                                {% if can_edit_user %}
+                                <button class="btn btn-link btn-sm text-warning px-3 edit-user-btn" 
+                                    data-id="{{ u.id }}" data-username="{{ u.username }}" data-email="{{ u.email }}"
+                                    data-dept="{{ u.profile.department.id }}" data-role="{{ u.role.id }}"
+                                    data-active="{{ u.is_active|yesno:'True,False' }}" data-staff="{{ u.is_staff|yesno:'True,False' }}"
+                                    data-super="{{ u.is_superuser|yesno:'True,False' }}" data-protected="{{ u.is_protected|yesno:'True,False' }}">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <img src="{% static 'images/d&h_soft_logo_gif.gif' %}" style="width: 150px; opacity: 0.5;">
+                            <p class="text-muted mt-3">No users found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 🎨 গ্রাফিক্যাল থিম স্টাইল */
+    .avatar-circle {
+        width: 42px; height: 42px; 
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white; border-radius: 12px; display: flex; 
+        align-items: center; justify-content: center; font-weight: bold;
+    }
+    .bg-soft-primary { background-color: rgba(78, 115, 223, 0.1); }
+    .pulse-dot {
+        height: 8px; width: 8px; background-color: #1cc88a;
+        border-radius: 50%; display: inline-block; margin-right: 5px;
+        box-shadow: 0 0 0 rgba(28, 200, 138, 0.4);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(28, 200, 138, 0); } 100% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0); } }
+    .shadow-hover:hover { background-color: #f8f9fc !important; transform: scale(1.002); transition: all 0.2s; }
+    .badge { font-weight: 600; font-size: 0.75rem; }
+    .btn-link { text-decoration: none; }
+    .btn-link:hover { background-color: #f1f3f5; }
+</style>
+
+<div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1060;"></div>
+
+{% include 'mainsystem/modals/add_user.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const userForm = document.getElementById('userForm');
+    const modalElement = document.getElementById('userModal');
+    const userModal = new bootstrap.Modal(modalElement);
+    const passGroup = document.getElementById('passwordFieldGroup');
+    const searchInput = document.getElementById('userSearch');
+    const roleFilter = document.getElementById('roleFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    // 🔍 ১. লাইভ সার্চ এবং ফিল্টার ফাংশন
+    function applyFilters() {
+        const query = searchInput.value.toLowerCase();
+        const role = roleFilter.value;
+        const status = statusFilter.value;
+        const rows = document.querySelectorAll('.user-row');
+
+        rows.forEach(row => {
+            const nameEmail = row.querySelector('.search-target').innerText.toLowerCase() + 
+                              row.querySelector('.text-muted').innerText.toLowerCase();
+            const dept = row.querySelector('.dept-target').innerText.toLowerCase();
+            const rVal = row.querySelector('.role-target').innerText.trim();
+            const sVal = row.querySelector('.status-target').innerText.trim();
+
+            const isMatch = (nameEmail.includes(query) || dept.includes(query)) && 
+                            (role === "" || rVal === role) && 
+                            (status === "" || sVal === status);
+            
+            row.style.display = isMatch ? "" : "none";
+        });
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    roleFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+
+    window.resetFilters = () => {
+        searchInput.value = "";
+        roleFilter.value = "";
+        statusFilter.value = "";
+        applyFilters();
+    };
+
+    // ➕ ২. ইউজার ক্রিয়েট মোডাল
+    document.getElementById('addUserBtn')?.addEventListener('click', () => {
+        userForm.reset();
+        userForm.removeAttribute('data-id');
+        passGroup.classList.remove('d-none');
+        document.getElementById('modalTitle').innerText = "Create New User Account";
+    });
+
+    // ✏️ ৩. ইউজার এডিট মোডাল ওপেন
+    document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const d = this.dataset;
+            userForm.setAttribute('data-id', d.id);
+            document.getElementById('modalTitle').innerText = "Update Account: " + d.username;
+            
+            document.getElementById('m_username').value = d.username;
+            document.getElementById('m_email').value = d.email;
+            document.getElementById('m_dept').value = d.dept || '';
+            document.getElementById('m_role').value = d.role;
+            document.getElementById('m_active').checked = (d.active === 'True');
+            document.getElementById('m_staff').checked = (d.staff === 'True');
+            document.getElementById('m_protected').checked = (d.protected === 'True');
+
+            passGroup.classList.add('d-none'); // Hide passwords for edit
+            userModal.show();
+        });
+    });
+
+    // 💾 ৪. AJAX সাবমিট
+    userForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userId = this.getAttribute('data-id');
+        const url = userId ? `/mainsystem/users/edit/${userId}/` : `/mainsystem/users/create/`;
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving...`;
+
+        fetch(url, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                showToast("Data saved successfully!", "success");
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast("Error: " + data.error, "danger");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Save Record";
+            }
+        })
+        .catch(err => {
+            showToast("Server error occurred", "danger");
+            submitBtn.disabled = false;
+        });
+    });
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0 show mb-2`;
+        toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div></div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+});
+</script>
+{% endblock %}

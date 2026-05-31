@@ -1,0 +1,37 @@
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead class="bg-dark text-white small">
+                <tr>
+                    <th class="ps-4">Username & Email</th>
+                    <th>Role & Permission</th>
+                    <th>Last Login</th>
+                    <th>Security</th>
+                    <th class="text-end pe-4">Access Control</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="ps-4">
+                        <span class="fw-bold">{{ u.username }}</span><br>
+                        <small class="text-muted">{{ u.email }}</small>
+                    </td>
+                    <td><span class="badge bg-info">{{ u.role.name }}</span></td>
+                    <td class="small">{{ u.last_login|date:"d M, Y | H:i" }}</td>
+                    <td>
+                        {% if u.is_protected %}
+                            <i class="bi bi-shield-lock-fill text-primary" title="সুরক্ষিত অ্যাকাউন্ট"></i>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" {% if u.is_active %}checked{% endif %} id="activeSwitch{{ u.id }}">
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

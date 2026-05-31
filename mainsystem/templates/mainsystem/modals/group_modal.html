@@ -1,0 +1,23 @@
+<div class="modal fade" id="groupManagerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="groupForm" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">মডিউল গ্রুপ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="groupId">
+          <input type="text" name="name" id="groupName" class="form-control mb-3" placeholder="গ্রুপ নাম">
+          <button type="submit" class="btn btn-primary">💾 সংরক্ষণ করুন</button>
+
+          <hr>
+          <div id="groupListContainer">
+            {% include 'mainsystem/partials/module_group_list.html' %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

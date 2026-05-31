@@ -1,0 +1,79 @@
+<div class="modal fade" id="groupManagerModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="groupForm" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">মডিউল গ্রুপ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <!-- form fields -->
+           <form id="groupForm" class="mb-4" method="POST">
+          {% csrf_token %}
+          <input type="hidden" id="groupId" name="id">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <input type="text" class="form-control" id="groupName" name="name" placeholder="গ্রুপ নাম" required>
+            </div>
+            <div class="col-md-4">
+              <input type="text" class="form-control" id="groupIcon" name="icon" placeholder="আইকন ক্লাস">
+            </div>
+            <div class="col-md-2">
+              <input type="number" class="form-control" id="groupOrder" name="order" min="0" placeholder="ক্রম" required>
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100">💾 সংরক্ষণ</button>
+            </div>
+          </div>
+        </form>
+        
+        </div>
+      </form>
+      <hr>
+      <div class="table-responsive" id="groupListContainer">
+             <table class="table table-bordered table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Icon</th>
+                  <th>Order</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for group in module_groups %}
+                  <tr id="groupRow{{ group.id }}">
+                    <td class="text-center">{{ forloop.counter }}</td>
+                    <td>{{ group.name }}</td>
+                    <td><code>{{ group.icon }}</code></td>
+                    <td>{{ group.order }}</td>
+                    <td class="text-center">
+                      {% if can_edit %}
+                        <button class="btn btn-sm btn-warning edit-group-btn"
+                                data-group='{
+                                  "id": "{{ group.id }}",
+                                  "name": "{{ group.name|escapejs }}",
+                                  "icon": "{{ group.icon|escapejs }}",
+                                  "order": "{{ group.order }}"
+                                }'>✏️</button>
+                      {% endif %}
+                      {% if can_delete %}
+                        <button class="btn btn-sm btn-danger delete-group-btn"
+                                data-id="{{ group.id }}" data-name="{{ group.name|escapejs }}">
+                          🗑️
+                        </button>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="5" class="text-center text-muted">❌ No module groups found</td></tr>
+                {% endfor %}
+              </tbody>
+
+            </table>
+      </div>    
+    </div>
+  </div>
+</div>

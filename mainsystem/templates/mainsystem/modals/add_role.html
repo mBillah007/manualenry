@@ -1,0 +1,21 @@
+<div class="modal fade" id="roleModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="roleForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title" id="roleModalLabel">রোল</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" name="name" class="form-control mb-2" placeholder="রোল নাম" required>
+        <div class="form-check">
+          <input type="checkbox" name="is_protected" class="form-check-input" id="isProtected">
+          <label class="form-check-label" for="isProtected">🔒 সুরক্ষিত রোল</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">💾 সংরক্ষণ করুন</button>
+      </div>
+    </form>
+  </div>
+</div>

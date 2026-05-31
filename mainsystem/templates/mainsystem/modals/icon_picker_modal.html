@@ -1,0 +1,22 @@
+<div class="modal fade" id="iconPickerModal" tabindex="-1" aria-labelledby="iconPickerLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-sm rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">🎨 আইকন নির্বাচন করুন</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          {% for icon in icon_list %}
+          <div class="col-2 text-center">
+            <button type="button" class="btn btn-outline-secondary w-100 icon-select-btn"
+                    data-icon="{{ icon }}">
+              <i class="{{ icon }} fs-4"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

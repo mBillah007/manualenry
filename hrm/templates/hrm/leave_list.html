@@ -1,0 +1,139 @@
+{% extends "mainsystem/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark">ছুটির আবেদনসমূহ (Leave Matrix)</h3>
+        <a href="{% url 'hrm:leave_create' %}" class="btn btn-primary rounded-pill px-4"><i class="fas fa-plus me-2"></i>নতুন আবেদন</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted text-uppercase small">
+                    <tr>
+                        <th class="ps-4">স্টাফের নাম</th>
+                        <th>ছুটির ধরণ</th>
+                        <th>শুরু</th>
+                        <th>শেষ</th>
+                        <th class="text-center">স্ট্যাটাস</th>
+                        <th class="text-end pe-4">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave in leaves %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-dark">{{ leave.staff.full_name }}</td>
+                        <td><span class="badge bg-info-subtle text-info">{{ leave.get_leave_type_display }}</span></td>
+                        <td>{{ leave.start_date|date:"d M, Y" }}</td>
+                        <td>{{ leave.end_date|date:"d M, Y" }}</td>
+                        <td class="text-center">
+                            {% if leave.status == 'APPROVED' %}
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3">Approved</span>
+                            {% elif leave.status == 'REJECTED' %}
+                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3" title="বাতিল করেছেন: {{ leave.rejected_by.username }}">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning rounded-pill px-3">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-1 align-items-center">
+                                
+                                {% if leave.status == 'PENDING' %}
+                                    <a href="{% url 'hrm:leave_edit' leave.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" title="এডিট"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'hrm:leave_approve' leave.id %}" class="btn btn-sm btn-success rounded-pill px-3 btn-approve"><i class="fas fa-check me-1"></i> মঞ্জুর</a>
+                                    <a href="{% url 'hrm:leave_reject' leave.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 btn-reject" title="বাতিল"><i class="fas fa-times"></i></a>
+                                
+                                {% elif leave.status == 'APPROVED' %}
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 small me-1">
+                                        <i class="fas fa-user-shield me-1"></i>Approved
+                                    </span>
+                                    <a href="{% url 'hrm:leave_edit' leave.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" title="এডিট"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'hrm:leave_reject' leave.id %}" class="btn btn-sm btn-danger rounded-pill px-2.5 btn-reject" title="পুনরায় বাতিল করুন">
+                                        <i class="fas fa-undo-alt"></i>
+                                    </a>
+                                    
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 small me-1" title="বাতিল করেছেন: {{ leave.rejected_by.username|default:'Admin' }}">
+                                        <i class="fas fa-ban me-1"></i>Rejected
+                                    </span>
+                                    
+                                    <a href="{% url 'hrm:leave_approve' leave.id %}" 
+                                    class="btn btn-sm btn-outline-success rounded-pill px-3 btn-approve"
+                                    title="বাতিলকৃত ছুটি পুনরায় মঞ্জুর করুন">
+                                        <i class="fas fa-check-double me-1"></i> পুনরায় মঞ্জুর
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">কোনো ছুটির রেকর্ড পাওয়া যায়নি।</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    
+    // মঞ্জুর (Approve) বাটনের জন্য ওয়ার্নিং
+    document.querySelectorAll('.btn-approve').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault(); // সরাসরি লিংকে যাওয়া বন্ধ করবে
+            const url = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'ছুটি মঞ্জুর করতে চান?',
+                text: "এই স্টাফকে ছুটির দিনগুলোতে অটোমেটিক 'On Leave' হিসেবে গণ্য করা হবে।",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1cc88a',
+                cancelButtonColor: '#858796',
+                confirmButtonText: 'হ্যাঁ, মঞ্জুর করুন!',
+                cancelButtonText: 'না, ফিরে যান'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url; // হ্যাঁ চাপলে লিংকে নিয়ে যাবে
+                }
+            });
+        });
+    });
+
+    // বাতিল (Reject) বাটনের জন্য ওয়ার্নিং
+    document.querySelectorAll('.btn-reject').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'আবেদনটি বাতিল করবেন?',
+                text: "বাতিল করলে এই আবেদনটি সিস্টেম থেকে মুছে ফেলা হবে!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74a3b',
+                cancelButtonColor: '#858796',
+                confirmButtonText: 'হ্যাঁ, বাতিল করুন',
+                cancelButtonText: 'না, রাখুন'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+    });
+    
+});
+</script>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends "mainsystem/base.html" %}
+{% load static %}
+{% block content %}
+<style>
+    .stat-card { transition: transform 0.3s, box-shadow 0.3s; border: none; border-radius: 16px; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .icon-shape { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(255,255,255,0.2); }
+    .bg-gradient-primary { background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); }
+    .bg-gradient-success { background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%); }
+    .bg-gradient-danger { background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%); }
+    .bg-gradient-info { background: linear-gradient(135deg, #36b9cc 0%, #258391 100%); }
+    .live-indicator { width: 10px; height: 10px; background-color: #1cc88a; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+    @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+    .table-responsive { max-height: 320px; overflow-y: auto; }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">সিস্টেম ওভারভিউ</h2>
+            <small class="text-muted"><span class="live-indicator me-1"></span> ডিভাইস পাঞ্চ সিঙ্ক্রোনাইজেশন চালু আছে</small>
+        </div>
+        <span class="badge bg-white text-dark p-2.5 shadow-sm border rounded-pill">
+            <i class="fas fa-calendar-alt me-2 text-primary"></i>{{ today|date:"d M, Y" }}
+        </span>
+    </div>
+    
+    <div class="row">
+        <div class="col-xl-2-5 col-md-4 mb-4" style="width: 20%; flex: 0 0 20%;">
+            <div class="card stat-card bg-gradient-primary text-white shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white-50 small text-uppercase fw-bold" style="font-size: 11px;">সক্রিয় স্টাফ</div>
+                        <div class="h2 fw-bold mb-0" id="count-total-staff">{{ total_staff }}</div>
+                    </div>
+                    <div class="icon-shape"><i class="fas fa-users fa-lg"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-5 col-md-4 mb-4" style="width: 20%; flex: 0 0 20%;">
+            <div class="card stat-card bg-gradient-success text-white shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white-50 small text-uppercase fw-bold" style="font-size: 11px;">আজ উপস্থিত</div>
+                        <div class="h2 fw-bold mb-0" id="count-present-today">{{ present_today }}</div>
+                    </div>
+                    <div class="icon-shape"><i class="fas fa-user-check fa-lg"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-5 col-md-4 mb-4" style="width: 20%; flex: 0 0 20%;">
+            <div class="card stat-card bg-gradient-warning text-white shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white-50 small text-uppercase fw-bold" style="font-size: 11px;">আজ বিলম্ব (Late)</div>
+                        <div class="h2 fw-bold mb-0" id="count-late-today">{{ late_today }}</div>
+                    </div>
+                    <div class="icon-shape"><i class="fas fa-user-clock fa-lg"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-5 col-md-4 mb-4" style="width: 20%; flex: 0 0 20%;">
+            <div class="card stat-card bg-gradient-danger text-white shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white-50 small text-uppercase fw-bold" style="font-size: 11px;">আজ ছুটিতে (Leave)</div>
+                        <div class="h2 fw-bold mb-0" id="count-on-leave">{{ on_leave_today }}</div>
+                    </div>
+                    <div class="icon-shape"><i class="fas fa-plane-departure fa-lg"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-5 col-md-4 mb-4" style="width: 20%; flex: 0 0 20%;">
+            <div class="card stat-card bg-gradient-info text-white shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-white-50 small text-uppercase fw-bold" style="font-size: 11px;">চলমান শিফট</div>
+                        <div class="h2 fw-bold mb-0" id="count-active-shifts">{{ active_shifts_today }}</div>
+                    </div>
+                    <div class="icon-shape"><i class="fas fa-business-time fa-lg"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-fingerprint text-danger me-2"></i>আজকের লাইভ অ্যাটেনডেন্স লগ (সর্বশেষ ১০টি পাঞ্চ)</h6>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 small">রিয়েল-টাইম ফিড</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted x-small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">স্টাফ তথ্য</th>
+                                    <th>শিফট</th>
+                                    <th>ইন টাইম (In Time)</th>
+                                    <th>আউট টাইম (Out Time)</th>
+                                    <th class="text-center">স্ট্যাটাস</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liveAttendanceTableBody">
+                                {% for punch in live_punches %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ punch.name }}</div>
+                                        <small class="text-muted">ID: {{ punch.staff_id }}</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">{{ punch.shift }}</span></td>
+                                    <td class="fw-medium text-success">{{ punch.in_time }}</td>
+                                    <td class="fw-medium text-muted">{{ punch.out_time }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if punch.status == 'Present' %}bg-success{% elif punch.status == 'Late' %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-1.5 rounded-pill">
+                                            {{ punch.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">আজকে এখনো কোনো ডিভাইস লগ পাওয়া যায়নি।</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-hourglass-half text-warning me-2"></i>পেন্ডিং ছুটির অনুমোদনসমূহ</h6>
+                    <a href="{% url 'hrm:leave_list' %}" class="btn btn-sm btn-light rounded-pill px-3">সব দেখুন</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted x-small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">স্টাফ</th>
+                                    <th>ছুটির ধরন</th>
+                                    <th>তারিখ ও মেয়াদ</th>
+                                    <th class="text-center">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for leave in pending_leaves %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-dark">{{ leave.name }}</td>
+                                    <td><span class="badge bg-info-subtle text-info">{{ leave.type }}</span></td>
+                                    <td>{{ leave.duration }} <small class="text-muted">({{ leave.days }} দিন)</small></td>
+                                    <td class="text-center">
+                                        <a href="{% url 'hrm:leave_approve' leave.id %}" class="btn btn-xs btn-success rounded-pill px-2 py-0.5 small" style="font-size: 12px;"><i class="fas fa-check"></i> মঞ্জুর</a>
+                                        <a href="{% url 'hrm:leave_reject' leave.id %}" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-0.5 small" style="font-size: 12px;"><i class="fas fa-times"></i> বাতিল</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">কোনো পেন্ডিং ছুটির আবেদন নেই।</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-calendar-star text-primary me-2"></i>আসন্ন সরকারি ছুটি (৩০ দিন)</h6>
+                    <a href="{% url 'hrm:holiday_list' %}" class="btn btn-sm btn-light rounded-pill px-3">+ যোগ করুন</a>
+                </div>
+                <div class="card-body p-3">
+                    <ul class="list-group list-group-flush" id="holidayListWidget">
+                        {% for holiday in upcoming_holidays %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2.5 border-bottom border-light">
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 13px;">{{ holiday.name }}</div>
+                                <small class="text-muted">{{ holiday.description|default:"সরকারি ছুটি" }}</small>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1.5">{{ holiday.date|date:"d M" }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="text-center py-4 text-muted list-group-item">আগামী ৩০ দিনে কোনো সরকারি ছুটি নেই।</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>উপস্থিতির ট্রেন্ড (বিগত ৭ দিন)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>বিভাগ ভিত্তিক ডিস্ট্রিবিউশন</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/chart.js' %}"></script>
+<script>
+    let deptChart, attendanceChart;
+
+    // চার্ট ১: ডিপার্টমেন্ট
+    const deptCtx = document.getElementById('deptChart').getContext('2d');
+    deptChart = new Chart(deptCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for d in dept_data %}"{{ d.department__name }}",{% endfor %}],
+            datasets: [{
+                data: [{% for d in dept_data %}{{ d.total }},{% endfor %}],
+                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+            }]
+        },
+        options: { cutout: '75%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // চার্ট ২: ট্রেন্ড
+    const attCtx = document.getElementById('attendanceChart').getContext('2d');
+    attendanceChart = new Chart(attCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for stat in attendance_stats %}"{{ stat.date }}",{% endfor %}],
+            datasets: [{
+                label: 'উপস্থিতি',
+                data: [{% for stat in attendance_stats %}{{ stat.present }},{% endfor %}],
+                borderColor: '#1cc88a',
+                backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // লাইভ রিফ্রেশ ফাংশন
+    async function refreshDashboard() {
+        try {
+            const response = await fetch("{% url 'hrm:dashboard_api' %}");
+            const data = await response.json();
+
+            // কাউন্টার আপডেট
+            document.getElementById('count-total-staff').innerText = data.total_staff;
+            document.getElementById('count-present-today').innerText = data.present_today;
+            document.getElementById('count-late-today').innerText = data.late_today;
+            document.getElementById('count-on-leave').innerText = data.on_leave_today; // নতুন
+            document.getElementById('count-active-shifts').innerText = data.active_shifts_today;
+
+            // টেবিল আপডেট
+            const tableBody = document.getElementById('liveAttendanceTableBody');
+            if(data.live_punches.length > 0) {
+                tableBody.innerHTML = '';
+                data.live_punches.forEach(punch => {
+                    let badgeColor = 'bg-success';
+                    if(punch.status === 'Late') badgeColor = 'bg-warning text-dark';
+                    else if(punch.status === 'Absent') badgeColor = 'bg-danger';
+                    else if(punch.status === 'On Leave') badgeColor = 'bg-info';
+
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">${punch.name}</div>
+                                <small class="text-muted">ID: ${punch.staff_id}</small>
+                            </td>
+                            <td><span class="badge bg-secondary-subtle text-secondary">${punch.shift}</span></td>
+                            <td class="fw-medium text-success">${punch.in_time}</td>
+                            <td class="fw-medium text-muted">${punch.out_time}</td>
+                            <td class="text-center">
+                                <span class="badge ${badgeColor} px-3 py-1.5 rounded-pill">${punch.status}</span>
+                            </td>
+                        </tr>`;
+                });
+            }
+
+            // চার্ট আপডেট
+            attendanceChart.data.labels = data.attendance_stats.map(s => s.date);
+            attendanceChart.data.datasets[0].data = data.attendance_stats.map(s => s.present);
+            attendanceChart.update('none');
+
+        } catch (error) {
+            console.error("লাইভ সিঙ্ক ত্রুটি:", error);
+        }
+    }
+
+    setInterval(refreshDashboard, 4000);
+</script>
+{% endblock %}

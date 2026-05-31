@@ -1,0 +1,296 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV - {{ staff.full_name }}</title>
+    
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/tom-select.css' %}" rel="stylesheet"> 
+    <style>
+        :root {
+            --primary-color: #1a2a6c;
+            --secondary-color: #2c3e50;
+            --accent-color: #007bff;
+            --text-muted: #6c757d;
+            --bg-light: #f4f7f6;
+        }
+
+        body {
+            background-color: #d1d8e0;
+            font-family: 'SolaimanLipi', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .cv-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+            display: flex;
+            position: relative;
+        }
+
+        /* Left Sidebar */
+        .cv-sidebar {
+            width: 30%;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 20px;
+        }
+
+        .profile-img-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 25px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-radius: 50%; /* Circle for modern look */
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .profile-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sidebar-section { margin-bottom: 30px; }
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .contact-item { font-size: 0.8rem; margin-bottom: 12px; display: flex; align-items: flex-start; }
+        .contact-item i { margin-right: 10px; color: var(--accent-color); }
+
+        /* Right Content */
+        .cv-main {
+            width: 70%;
+            padding: 40px;
+        }
+
+        .header-section {
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header-name { font-size: 2.5rem; font-weight: 800; color: var(--primary-color); margin: 0; }
+        .header-title { font-size: 1.1rem; color: var(--accent-color); font-weight: 600; letter-spacing: 1px; }
+
+        .main-section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: white;
+            background: var(--primary-color);
+            padding: 8px 15px;
+            margin: 25px 0 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .main-section-title i { margin-right: 10px; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .info-box { background: var(--bg-light); padding: 10px 12px; border-left: 3px solid var(--accent-color); border-radius: 4px; }
+        .info-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; display: block; }
+        .info-value { font-size: 0.9rem; color: #222; font-weight: 600; }
+
+        .edu-table { font-size: 0.85rem; }
+        .edu-table thead { background: #f1f1f1; border-bottom: 2px solid #ddd; }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            body { margin: 0; background: white; }
+            .cv-container { box-shadow: none; margin: 0; width: 100%; height: 100%; }
+            .no-print { display: none; }
+            .cv-sidebar { -webkit-print-color-adjust: exact; background-color: var(--primary-color) !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container no-print py-4 text-center">
+    <a href="javascript:void(0)" onclick="window.print()" class="btn btn-primary shadow">
+        <i class="bi bi-printer-fill me-2"></i> Print Staff CV
+    </a>
+</div>
+
+<div class="cv-container">
+    <!-- Left Sidebar -->
+    <div class="cv-sidebar">
+        <div class="profile-img-container shadow">
+            {% if staff.profile_image %}
+                <img src="{{ staff.profile_image.url }}" alt="Profile">
+            {% else %}
+                <div class="h-100 d-flex align-items-center justify-content-center bg-light text-secondary">
+                    <i class="bi bi-person-fill display-2"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-section">
+            <h5 class="sidebar-title">Contact</h5>
+            <div class="contact-item">
+                <i class="bi bi-telephone-fill"></i>
+                <span>{{ staff.phone_number }}</span>
+            </div>
+            {% if staff.email %}
+            <div class="contact-item">
+                <i class="bi bi-envelope-fill"></i>
+                <span class="text-break">{{ staff.email }}</span>
+            </div>
+            {% endif %}
+            <div class="contact-item">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span><strong>Present:</strong><br>{{ staff.present_address }}</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h5 class="sidebar-title">Emergency Contact</h5>
+            <div class="contact-item">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>{{ staff.emergency_contact|default:"Not Provided" }}</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h5 class="sidebar-title">Identity</h5>
+            <div class="contact-item">
+                <i class="bi bi-card-text"></i>
+                <span>Staff ID: <strong>{{ staff.staff_id }}</strong></span>
+            </div>
+            {% if staff.device_user_id %}
+            <div class="contact-item">
+                <i class="bi bi-fingerprint"></i>
+                <span>Biometric ID: {{ staff.device_user_id }}</span>
+            </div>
+            {% endif %}
+            <div class="contact-item">
+                <i class="bi bi-droplet-fill"></i>
+                <span>Blood Group: {{ staff.blood_group|default:"N/A" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Main Content -->
+    <div class="cv-main">
+        <header class="header-section">
+            <h1 class="header-name">{{ staff.full_name }}</h1>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="header-title"> ID : {{ staff.staff_id }} | Roll : {{ staff.designation }} </div>
+                <span class="badge {% if staff.status == 'active' %}bg-success{% elif staff.status == 'on_leave' %}bg-warning{% else %}bg-danger{% endif %} status-badge">
+                    {{ staff.get_status_display }}
+                </span>
+            </div>
+        </header>
+
+        <!-- Personal Info -->
+        <h5 class="main-section-title"><i class="bi bi-person-circle"></i> Personal Information</h5>
+        <div class="info-grid">
+            <div class="info-box">
+                <span class="info-label">Father's Name</span>
+                <span class="info-value">{{ staff.father_name|default:"-" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Mother's Name</span>
+                <span class="info-value">{{ staff.mother_name|default:"-" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Date of Birth</span>
+                <span class="info-value">{{ staff.date_of_birth|date:"d M, Y"|default:"N/A" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Gender</span>
+                <span class="info-value">{{ staff.get_gender_display }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">NID Number</span>
+                <span class="info-value">{{ staff.nid_number|default:"N/A" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Permanent Address</span>
+                <span class="info-value">{{ staff.permanent_address|default:"Same as present" }}</span>
+            </div>
+        </div>
+
+        <!-- Academic Info -->
+        <h5 class="main-section-title"><i class="bi bi-mortarboard-fill"></i> Educational Background</h5>
+        <div class="table-responsive">
+            <table class="table edu-table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>Degree</th>
+                        <th>Institute</th>
+                        <th class="text-center">Year</th>
+                        <th class="text-center">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for edu in staff.educations.all %}
+                    <tr>
+                        <td class="fw-bold">{{ edu.degree_name }}</td>
+                        <td>{{ edu.institute }}</td>
+                        <td class="text-center">{{ edu.passing_year }}</td>
+                        <td class="text-center">{{ edu.result }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No education records found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Employment Info -->
+        <h5 class="main-section-title"><i class="bi bi-briefcase-fill"></i> Institutional Details</h5>
+        <div class="info-grid">
+            <div class="info-box">
+                <span class="info-label">Department</span>
+                <span class="info-value">{{ staff.department.name|default:"General" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Shift</span>
+                <span class="info-value">{{ staff.shift.name|default:"Default" }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Employment Type</span>
+                <span class="info-value">{{ staff.get_employment_type_display }}</span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Joining Date</span>
+                <span class="info-value">{{ staff.joining_date|date:"d M, Y" }}</span>
+            </div>
+        </div>
+
+        <!-- Footer / Signature -->
+        <div style="margin-top: 60px;" class="row">
+            <div class="col-6 text-center">
+                <div style="border-top: 1px solid #444; width: 160px; margin: 0 auto;"></div>
+                <small class="fw-bold">Employee's Signature</small>
+            </div>
+            <div class="col-6 text-center">
+                <div style="border-top: 1px solid #444; width: 160px; margin: 0 auto;"></div>
+                <small class="fw-bold">HR/Authorized Signature</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

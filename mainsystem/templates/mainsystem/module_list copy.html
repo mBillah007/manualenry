@@ -1,0 +1,146 @@
+{% extends 'mainsystem/base.html' %}
+{% load custom_tags %}
+{% load static %}
+
+{% block content %}
+{% can_create 'mainsystem:module_list' as can_add_module %}
+{% can_edit 'mainsystem:module_list' as can_edit_module %}
+{% can_delete 'mainsystem:module_list' as can_delete_module %}
+{% can_create 'mainsystem:module_sync' as can_sync_modules %}
+{% can_edit 'mainsystem:module_group_list' as can_edit_module_group %}
+{% can_delete 'mainsystem:module_group_delete' as can_delete_module_group %}
+{% can_create 'mainsystem:module_group_save' as can_create_group %}
+
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold">🧩 Module Managment</h4>
+    <p class="text-muted">Total Module: {{ modules|length }}</p>
+    <div>
+      {% if can_create_group %}
+      <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#groupManagerModal">
+          🧩 Module Group Managment
+        </button>
+
+      </div>
+      {% endif %}
+      {% if can_sync_modules %}
+        <button id="syncModulesBtn"
+                class="btn btn-outline-primary"
+                data-url="{% url 'mainsystem:module_sync' %}">
+          🔄 Sync Modules
+        </button>
+
+      {% endif %}
+      {% if can_add_module %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#moduleModal" id="addModuleBtn">
+          ➕ Add Module
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="table-responsive">
+  <table class="table table-bordered" id="moduleTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Label</th> <!-- ✅ New Column -->
+        <th>URL</th>
+        <th>Icon</th>
+        <th>Group</th>
+        <th>Parent</th>
+        <th>Order</th>
+        <th>Visible</th>
+        <th>Header?</th> <!-- ✅ New Column -->
+        <th>✏️</th>
+      </tr>
+    </thead>
+    <tbody id="moduleTableBody">
+      {% for module in modules %}
+      <tr>
+        <td>{{ module.name }}</td>
+        <td>{{ module.label|default:"—" }}</td>
+        <td>{{ module.url_name }}</td>
+        <td><i class="{{ module.icon }}"></i></td>
+        <td>
+          {% if module.group %}
+            <span class="text-primary">{{ module.group.name }}</span>
+          {% else %}
+            <span class="text-muted">-- None --</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if module.parent %}
+            {{ module.parent.name }}
+          {% else %}
+            <span class="text-muted">-- None --</span>
+          {% endif %}
+        </td>
+        <td>{{ module.order }}</td>
+        <td>
+          {% if module.is_visible %}
+            <span class="badge bg-success">Yes</span>
+          {% else %}
+            <span class="badge bg-secondary">No</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if module.is_header %}
+            <span class="badge bg-info">Yes</span>
+          {% else %}
+            <span class="badge bg-light text-muted">No</span>
+          {% endif %}
+        </td>
+        <td class="text-center">
+          {% if can_edit_module %}
+            <!-- Edit Button -->
+            <button class="btn btn-sm btn-outline-primary edit-module-btn"
+                    data-bs-toggle="modal"
+                    data-bs-target="#moduleModal"
+                    data-module='{
+                      "id": "{{ module.id }}",
+                      "name": "{{ module.name|escapejs }}",
+                      "label": "{{ module.label|default_if_none:""|escapejs }}",
+                      "url_name": "{{ module.url_name|escapejs }}",
+                      "icon": "{{ module.icon|escapejs }}",
+                      "order": "{{ module.order }}",
+                      "parent_id": "{{ module.parent.id|default:"" }}",
+                      "group_id": "{{ module.group.id|default:"" }}",
+                      "is_visible": {{ module.is_visible|yesno:"true,false" }},
+                      "is_header": {{ module.is_header|yesno:"true,false" }}
+                    }'>
+              <i class="bi bi-pencil"></i> Edit
+            </button>
+          {% endif %}
+
+          {% if can_delete_module %}
+            <!-- Delete Button -->
+            <form method="POST" action="{% url 'mainsystem:module_delete' module.id %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Are you sure you want to delete {{ module.name }}?')">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </form>
+          {% endif %}
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+{% include 'mainsystem/modals/add_module.html' %}
+{% include 'mainsystem/modals/icon_picker_modal.html' %}
+{% include 'mainsystem/modals/module_group.html' with module_groups=module_groups can_create=can_create_group can_edit=can_edit_module_group can_delete=can_delete_module_group %}
+
+ 
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'mainsystem/js/module.js' %}"></script>
+<script src="{% static 'mainsystem/js/module_group.js' %}"></script>
+{% endblock %}

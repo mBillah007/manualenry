@@ -1,0 +1,440 @@
+<div class="modal fade" id="staffModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <!-- Header -->
+            <div class="modal-header border-0 bg-primary bg-gradient p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-circle me-3 shadow-sm">
+                        <i class="bi bi-person-vcard-fill text-white fs-3"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-white mb-0" id="modalTitle">STAFF REGISTRATION</h4>
+                        <p class="text-white-50 mb-0 small">আপনার মডেল অনুযায়ী সকল তথ্য নিচে প্রদান করুন</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="staffForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4 p-lg-5 bg-light">
+                    <input type="hidden" name="staff_db_id" id="staff_db_id">
+                    
+                    <div class="row g-4">
+                        <!-- Left Side: Core Info -->
+                        <div class="col-lg-8">
+                            <!-- Personal Section -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold text-primary mb-4 border-bottom pb-2">
+                                        <i class="bi bi-person-circle me-2"></i>Personal Details
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">First Name *</label>
+                                            <input type="text" name="first_name" id="first_name" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Last Name *</label>
+                                            <input type="text" name="last_name" id="last_name" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Father's Name</label>
+                                            <input type="text" name="father_name" id="father_name" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Mother's Name</label>
+                                            <input type="text" name="mother_name" id="mother_name" class="form-control">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Gender</label>
+                                            <select name="gender" id="gender" class="form-select">
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">DOB</label>
+                                            <input type="date" name="date_of_birth" id="date_of_birth" class="form-control">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Blood Group</label>
+                                            <input type="text" name="blood_group" id="blood_group" class="form-control" placeholder="B+">
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">NID Number</label>
+                                            <input type="text" name="nid_number" id="nid_number" class="form-control">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Institutional Section -->
+                            <div class="card border-0 shadow-sm rounded-4">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold text-success mb-4 border-bottom pb-2">
+                                        <i class="bi bi-building me-2"></i>Institutional & HR Info
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Staff ID (Unique)</label>
+                                            <input type="text" name="staff_id" id="staff_id" class="form-control fw-bold border-success" placeholder="1001" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Biometric ID</label>
+                                            <input type="text" name="device_user_id" id="device_user_id" class="form-control">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Employment Type</label>
+                                            <select name="employment_type" id="employment_type" class="form-select">
+                                                <option value="probation">Probation</option>
+                                                <option value="permanent">Permanent</option>
+                                                <option value="contractual">Contractual</option>
+                                                <option value="intern">Intern</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Department</label>
+                                            <select name="department" id="department" class="form-select">
+                                                <option value="">Select Dept.</option>
+                                                {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Designation</label>
+                                            <input type="text" name="designation" id="designation" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Shift</label>
+                                            <select name="shift" id="shift" class="form-select">
+                                                <option value="">Select Shift</option>
+                                                {% for sh in shifts %}<option value="{{ sh.id }}">{{ sh.name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Basic Salary</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">৳</span>
+                                                <input type="number" step="0.01" name="basic_salary" id="basic_salary" class="form-control" value="0.00">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Joining Date</label>
+                                            <input type="date" name="joining_date" id="joining_date" class="form-control">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Weekly Off Day</label>
+                                            <select name="weekly_off" id="weekly_off" class="form-select">
+                                                <option value="">No Weekly Off</option> <!-- ডিফল্ট বা কোনো ছুটি না থাকলে -->
+                                                <option value="0">Friday</option>
+                                                <option value="1">Saturday</option>
+                                                <option value="2">Sunday</option>
+                                                <option value="3">Monday</option>
+                                                <option value="4">Tuesday</option>
+                                                <option value="5">Wednesday</option>
+                                                <option value="6">Thursday</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side -->
+                        <div class="col-lg-4">
+                            <!-- Photo -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card-body text-center p-4">
+                                    <div id="imagePreview" class="mx-auto border border-4 border-white shadow-sm rounded-circle overflow-hidden bg-white mb-3" style="width: 150px; height: 150px;">
+                                        <i class="bi bi-person-fill text-light display-1"></i>
+                                    </div>
+                                    <label class="btn btn-sm btn-primary rounded-pill px-3">
+                                        <i class="bi bi-camera me-1"></i> Upload Image
+                                        <input type="file" name="profile_image" id="profile_image" hidden accept="image/*" onchange="previewProfileImage(this)">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Login & Contact -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                <div class="card-body p-4">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-primary">Login Email</label>
+                                        <input type="email" name="email" id="email" class="form-control" placeholder="unique@email.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Primary Phone *</label>
+                                        <input type="text" name="phone_number" id="phone_number" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Emergency Contact</label>
+                                        <input type="text" name="emergency_contact" id="emergency_contact" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Switch -->
+                            <div class="card border-0 shadow-sm rounded-4 bg-dark text-white">
+                                <div class="card-body p-4">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">General Status</label>
+                                        <select name="status" id="status" class="form-select bg-secondary text-white border-0">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                            <option value="on_leave">On Leave</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+                                        <label class="form-check-label fw-bold small" for="is_active">Permit System Access</label>
+                                    </div>
+                                    <div id="resignation_div" class="mt-3 d-none">
+                                        <label class="form-label small fw-bold text-danger">Resignation Date</label>
+                                        <input type="date" name="resignation_date" id="resignation_date" class="form-control border-danger">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Width Addresses -->
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm rounded-4">
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-uppercase">Present Address</label>
+                                            <textarea name="present_address" id="present_address" class="form-control" rows="2"></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-uppercase">Permanent Address</label>
+                                            <textarea name="permanent_address" id="permanent_address" class="form-control" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+<!-- Full Width Education Section (নতুন যুক্ত করা হয়েছে) -->
+<div class="col-12">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-mortarboard-fill me-2 text-info"></i>Educational Qualifications
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addEducationRow()">
+                    <i class="bi bi-plus-circle me-1"></i>Add Degree
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle" id="educationTable">
+                    <thead class="bg-light">
+                        <tr class="small text-uppercase fw-bold text-muted">
+                            <th style="width: 25%">Degree</th>
+                            <th style="width: 35%">Institute</th>
+                            <th style="width: 15%">Year</th>
+                            <th style="width: 15%">Result</th>
+                            <th style="width: 10%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="educationBody">
+                        <!-- Rows will be added here via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+                <div class="modal-footer border-0 p-4 bg-white">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow">
+                        <i class="bi bi-cloud-arrow-up me-2"></i>SAVE PROFILE
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+// ১. ইমেজ প্রিভিউ
+function previewProfileImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" class="w-100 h-100 object-fit-cover">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// ২. এডিট ডাটা ফেচিং (AJAX)
+function editStaff(id) {
+    fetch(`/hrm/get-staff-data/${id}/`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            const form = document.getElementById('staffForm');
+            form.reset(); // ফর্ম রিসেট
+
+            // সাধারণ ফিল্ড ম্যাপিং
+            document.getElementById('staff_db_id').value = data.db_id || '';
+            document.getElementById('staff_id').value = data.staff_id || '';
+            document.getElementById('device_user_id').value = data.device_user_id || '';
+            document.getElementById('first_name').value = data.first_name || '';
+            document.getElementById('last_name').value = data.last_name || '';
+            document.getElementById('father_name').value = data.father_name || '';
+            document.getElementById('mother_name').value = data.mother_name || '';
+            document.getElementById('nid_number').value = data.nid_number || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('phone_number').value = data.phone_number || '';
+            document.getElementById('emergency_contact').value = data.emergency_contact || '';
+            document.getElementById('present_address').value = data.present_address || '';
+            document.getElementById('permanent_address').value = data.permanent_address || '';
+            document.getElementById('designation').value = data.designation || '';
+            document.getElementById('basic_salary').value = data.basic_salary || 0;
+            document.getElementById('blood_group').value = data.blood_group || 'N/A';
+
+            // ড্রপডাউন এবং ফরেন কি
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('employment_type').value = data.employment_type || 'probation';
+            document.getElementById('department').value = data.dept_id || '';
+            document.getElementById('shift').value = data.shift_id || '';
+            document.getElementById('status').value = data.work_status || 'active';
+            // weekly_off যদি null হয় তবে ড্রপডাউন খালি (No Weekly Off) থাকবে
+            document.getElementById('weekly_off').value = (data.weekly_off !== null) ? data.weekly_off : "";
+
+            // ডেট ফিল্ডস
+            document.getElementById('date_of_birth').value = data.date_of_birth || '';
+            document.getElementById('joining_date').value = data.joining_date || '';
+            document.getElementById('resignation_date').value = data.resignation_date || '';
+
+            // চেকবক্স
+            document.getElementById('is_active').checked = data.is_active;
+
+            // এডুকেশন ডাটা লোড (ক্লিন ও রিফ্রেশ)
+            const tbody = document.getElementById('educationBody');
+            tbody.innerHTML = ''; // আগের সব রো মুছে ফেলা
+            if (data.educations && data.educations.length > 0) {
+                data.educations.forEach(edu => addEducationRow(edu));
+            } else {
+                addEducationRow(); // ডাটা না থাকলে একটি খালি রো
+            }
+
+            // ইমেজ প্রিভিউ আপডেট
+            const preview = document.getElementById('imagePreview');
+            if (data.profile_image_url) {
+                preview.innerHTML = `<img src="${data.profile_image_url}" class="w-100 h-100 object-fit-cover rounded-3">`;
+            } else {
+                preview.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100 bg-light rounded-3">
+                                        <i class="bi bi-person-fill text-secondary display-1"></i>
+                                     </div>`;
+            }
+
+            // মোডাল টাইটেল এবং শো
+            document.getElementById('modalTitle').innerText = "Update Profile: " + data.first_name;
+            const staffModal = new bootstrap.Modal(document.getElementById('staffModal')); // নিশ্চিত করুন মোডাল অবজেক্ট ঠিক আছে
+            staffModal.show();
+        } else {
+            Swal.fire('Error!', data.message || 'ডাটা পাওয়া যায়নি', 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Fetch Error:', err);
+        Swal.fire('Error!', 'সার্ভার থেকে তথ্য আনতে সমস্যা হয়েছে', 'error');
+    });
+}
+// এডুকেশন রো ম্যানেজমেন্ট
+function addEducationRow(data = {}) {
+    const tbody = document.getElementById('educationBody');
+    // Date.now() ব্যবহার করলে স্ট্রিং হিসেবে নেওয়া নিরাপদ
+    const rowId = 'edu_' + Date.now() + Math.floor(Math.random() * 1000); 
+    
+    const row = document.createElement('tr');
+    row.setAttribute('id', rowId); // আইডি সরাসরি সেট করুন
+    
+    row.innerHTML = `
+        <td><input type="text" name="edu_degree[]" class="form-control form-control-sm" value="${data.degree_name || ''}" required></td>
+        <td><input type="text" name="edu_institute[]" class="form-control form-control-sm" value="${data.institute || ''}" required></td>
+        <td><input type="number" name="edu_year[]" class="form-control form-control-sm" value="${data.passing_year || ''}" required></td>
+        <td><input type="text" name="edu_result[]" class="form-control form-control-sm" value="${data.result || ''}" required></td>
+        <td class="text-center">
+            <button type="button" class="btn btn-link text-danger p-0" onclick="removeEducationRow('${rowId}')">
+                <i class="bi bi-trash3-fill fs-5"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+}
+
+function removeEducationRow(id) {
+    const row = document.getElementById(id); // সরাসরি আইডি দিয়ে খুঁজুন
+    const tbody = document.getElementById('educationBody');
+    
+    // যদি অন্তত ১টির বেশি রো থাকে তবেই ডিলিট হবে
+    if (tbody.querySelectorAll('tr').length > 1) {
+        if (row) {
+            row.remove();
+        }
+    } else {
+        // শেষ রো-টি ডিলিট না করে ইনপুট ক্লিয়ার করে দেওয়া
+        if (row) {
+            row.querySelectorAll('input').forEach(input => input.value = '');
+        }
+    }
+}
+// এডিট করার সময় বিদ্যমান ডাটা লোড করা (editStaff ফাংশনের ভেতর এটি কল করবেন)
+//假设 data.educations এ লিস্ট আছে
+function fillEducationData(educations) {
+    const tbody = document.getElementById('educationBody');
+    tbody.innerHTML = ''; // আগের সব রো ক্লিয়ার করা
+    if (educations && educations.length > 0) {
+        educations.forEach(edu => addEducationRow(edu));
+    } else {
+        addEducationRow(); // ডাটা না থাকলে একটি খালি রো দেখানো
+    }
+}
+
+// ৩. স্ট্যাটাস অনুযায়ী রেজিনেশন ডেট শো/হাইড
+document.getElementById('status').addEventListener('change', function() {
+    const resDiv = document.getElementById('resignation_div');
+    if (this.value === 'inactive') {
+        resDiv.classList.remove('d-none');
+    } else {
+        resDiv.classList.add('d-none');
+    }
+});
+
+</script>
+<style>
+    /* Professional Styling Updates */
+    #staffModal .form-control, #staffModal .form-select {
+        border-radius: 8px;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease;
+    }
+    #staffModal .form-control:focus, #staffModal .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+        background-color: #fff;
+    }
+    #staffModal .form-label {
+        margin-bottom: 0.4rem;
+        letter-spacing: 0.5px;
+    }
+    #staffModal .card {
+        transition: transform 0.2s ease;
+    }
+    .bg-light-subtle { background-color: #f8f9fc !important; }
+    
+    /* Animation for Resignation Div */
+    .animate__fadeIn {
+        animation: fadeIn 0.4s both;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

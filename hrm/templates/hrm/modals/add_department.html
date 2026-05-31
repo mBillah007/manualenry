@@ -1,0 +1,105 @@
+<div class="modal fade" id="departmentModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            
+            <div class="modal-header border-0 bg-light py-3 px-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                        <i class="bi bi-building-gear text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0">বিভাগ ব্যবস্থাপনা</h5>
+                        <small class="text-muted">সকল ডিপার্টমেন্ট এখান থেকে নিয়ন্ত্রণ করুন</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="resetDeptForm()"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="departmentForm" class="p-4 rounded-4 border border-2 border-dashed bg-white mb-4 transition-all">
+                    {% csrf_token %}
+                    <input type="hidden" name="dept_id" id="deptId"> 
+                    
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-uppercase text-muted">বিভাগের নাম</label>
+                            <input type="text" name="name" id="deptName" class="form-control form-control-lg border-0 bg-light shadow-none fs-6" placeholder="যেমন: এডমিনিস্ট্রেশন " required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted">কোড</label>
+                            <input type="text" name="code" id="deptCode" class="form-control form-control-lg border-0 bg-light shadow-none fs-6 text-uppercase" placeholder="CARD" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted">বর্ণনা (ঐচ্ছিক)</label>
+                            <input type="text" name="description" id="deptDesc" class="form-control form-control-lg border-0 bg-light shadow-none fs-6" placeholder="সংক্ষিপ্ত বিবরণ">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" id="clearDeptBtn" class="btn btn-light rounded-pill px-4 fw-bold text-muted d-none" onclick="resetDeptForm()">
+                            <i class="bi bi-x-circle me-1"></i> ক্লিয়ার
+                        </button>
+                        <button type="submit" id="deptSubmitBtn" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="bi bi-plus-lg me-1"></i> বিভাগ যোগ করুন
+                        </button>
+                    </div>
+                </form>
+
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-muted small text-uppercase">
+                                <th class="ps-4 py-3">বিভাগের নাম ও বিবরণ</th>
+                                <th>কোড</th>
+                                <th class="text-center">অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="departmentTableBody" class="border-top-0">
+                            {% for dept in departments %}
+                            <tr id="dept-row-{{ dept.id }}" class="transition-all">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">{{ dept.name }}</div>
+                                    <small class="text-muted">{{ dept.description|default:"কোনো বর্ণনা নেই" }}</small>
+                                </td>
+                                <td><span class="badge bg-info-subtle text-info px-3 rounded-pill">{{ dept.code }}</span></td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <!-- Table Row Actions -->
+                                        <button class="btn btn-sm btn-white shadow-sm border rounded-circle p-2 text-warning" 
+                                                onclick="editDept('{{ dept.id }}', '{{ dept.name|escapejs }}', '{{ dept.code|escapejs }}', '{{ dept.description|escapejs }}')"
+                                                title="Edit">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-white shadow-sm border rounded-circle p-2 text-danger" 
+                                                onclick="deleteDept('{{ dept.id }}', '{{ dept.name|escapejs }}')"
+                                                title="Delete">
+                                            <i class="bi bi-trash3-fill"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block opacity-25"></i>
+                                    কোনো বিভাগ পাওয়া যায়নি
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* অতিরিক্ত প্রফেশনাল টাচ */
+    #departmentForm { transition: background 0.3s ease; }
+    .btn-white { background: #fff; }
+    .btn-white:hover { background: #f8f9fa; }
+    .transition-all { transition: all 0.2s ease-in-out; }
+    #dept-row:hover { background-color: rgba(13, 110, 253, 0.02); }
+    .form-control-lg:focus { background-color: #fff !important; border: 1px solid #0d6efd !important; box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important; }
+</style>

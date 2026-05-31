@@ -1,0 +1,41 @@
+{% extends "mainsystem/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0 rounded-4">
+                <div class="card-header bg-white border-0 pt-4 ps-4">
+                    <h4 class="fw-bold text-dark mb-0">{{ title }}</h4>
+                    
+                    {% if was_approved %}
+                        <div class="alert alert-danger d-flex align-items-center mt-3 rounded-3 small" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>সতর্কতা!</strong> এই ছুটিটি ইতিমধ্যেই মঞ্জুর করা হয়েছে। এখানে তারিখ পরিবর্তন করলে স্টাফের দৈনিক উপস্থিতির (Attendance List) রেকর্ডও স্বয়ংক্রিয়ভাবে পরিবর্তিত হবে।
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-secondary">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">আবেদন জমা দিন</button>
+                            <a href="{% url 'hrm:leave_list' %}" class="btn btn-light w-100 rounded-pill py-2">ফিরে যান</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'mainsystem/base.html' %}
+{% load custom_tags %}
+{% load static %}
+{% block content %}
+
+{% can_access 'mainsystem:user_list' as can_access %}
+{% can_create 'mainsystem:user_create' as can_create %}
+{% can_edit 'mainsystem:user_edit' as can_edit_user %}
+{% can_delete 'mainsystem:user_delete' as can_delete_user %}
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="fw-bold text-primary">{{ page_title }}</h2>
+      <p class="text-muted">{{ welcome_text }}</p>
+    </div>
+    {% if can_create %}
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal" id="addUserBtn">
+        ➕ নতুন ইউজার
+      </button>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>ইউজারনেম</th>
+            <th>ইমেইল</th>
+            <th>রোল</th>
+            <th>অবস্থা</th>
+            <th>টাইপ</th>
+            <th>তৈরী</th>
+            <th>শেষ লগইন</th>
+            <th>রিমুভ</th>
+            <th>অ্যাকশন</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role.name }}</td>
+            <td>
+              <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                {% if user.is_active %}সক্রিয়{% else %}নিষ্ক্রিয়{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if user.is_staff %}<span class="badge bg-info">স্টাফ</span>{% endif %}
+              {% if user.is_superuser %}<span class="badge bg-warning text-dark">সুপার</span>{% endif %}
+            </td>
+            <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+            <td>{{ user.last_login|date:"Y-m-d H:i" }}</td>
+            <td>
+              {% if user.is_protected %}
+                <span class="text-muted">🔒</span>
+              {% elif can_delete_user %}
+                <form method="POST" action="{% url 'mainsystem:user_delete' user.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger"
+                          onclick="return confirm('আপনি কি {{ user.username }} কে মুছে ফেলতে চান?')">
+                    🗑️
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'mainsystem:profile_view' user_id=user.id %}" class="btn btn-sm btn-info">
+                👁️ প্রোফাইল দেখুন
+              </a>
+              {% if can_edit_user %}
+                <button class="btn btn-sm btn-outline-warning edit-user-btn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#userModal"
+                        data-user='{
+                          "id": "{{ user.id }}",
+                          "username": "{{ user.username }}",
+                          "email": "{{ user.email }}",
+                          "role_id": "{{ user.role.id }}",
+                          "is_active": "{{ user.is_active }}",
+                          "is_staff": "{{ user.is_staff }}",
+                          "is_superuser": "{{ user.is_superuser }}",
+                          "is_protected": "{{ user.is_protected }}"
+                        }'>
+                  ✏️
+                </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% include 'mainsystem/modals/add_user.html' %}
+</div>
+
+<!-- ✅ Toast Container -->
+<div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- AJAX + Modal Logic -->
+<script src="{% static 'mainsystem/js/user_modal.js' %}"></script>
+{% endblock %}

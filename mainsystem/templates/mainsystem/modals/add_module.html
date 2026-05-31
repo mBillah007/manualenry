@@ -1,0 +1,87 @@
+<form id="moduleForm" 
+      method="post" 
+      action="{% if form.instance.id %}{% url 'mainsystem:module_update' form.instance.id %}{% else %}{% url 'mainsystem:module_create' %}{% endif %}"
+      data-instance-name="{{ form.instance.name|default:'' }}">
+  
+  {% csrf_token %}
+  
+  <div class="modal-body row g-3">
+    <input type="hidden" id="moduleId" name="id" value="{{ form.instance.id|default:'' }}">
+
+    <div class="col-md-6">
+      <label for="moduleName" class="form-label fw-semibold text-secondary">নাম (Name)</label>
+      <input type="text" id="moduleName" name="name" class="form-control" value="{{ form.instance.name|default:'' }}" placeholder="যেমন: Hospital Admissions" required>
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleLabel" class="form-label fw-semibold text-secondary">লেবেল (Label)</label>
+      <input type="text" id="moduleLabel" name="label" class="form-control" value="{{ form.instance.label|default:'' }}" placeholder="যেমন: অ্যাডমিশন ম্যানেজমেন্ট">
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleUrl" class="form-label fw-semibold text-secondary">URL Name (Django Route)</label>
+      <input type="text" id="moduleUrl" name="url_name" class="form-control" value="{{ form.instance.url_name|default:'' }}" placeholder="যেমন: mainsystem:admission_list">
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleIcon" class="form-label fw-semibold text-secondary">আইকন ক্লাস (Icon Class)</label>
+      <div class="input-group">
+        <span class="input-group-text bg-light" id="iconPreview"><i class="{{ form.instance.icon|default:'bi bi-box' }}"></i></span>
+        <input type="text" id="moduleIcon" name="icon" class="form-control" value="{{ form.instance.icon|default:'' }}" placeholder="যেমন: bi bi-shield-lock">
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleOrder" class="form-label fw-semibold text-secondary">ক্রম (Order/Position)</label>
+      <input type="number" id="moduleOrder" name="order" class="form-control" value="{{ form.instance.order|default:0 }}">
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleParent" class="form-label fw-semibold text-secondary">প্যারেন্ট মডিউল (Parent)</label>
+      <select id="moduleParent" name="parent" class="form-select">
+        <option value="">-- কোনোটিই নয় (Root) --</option>
+        {% for m in modules %}
+          {% if m.id != form.instance.id %} <option value="{{ m.id }}" {% if form.instance.parent and form.instance.parent.id == m.id %}selected{% endif %}>{{ m.name }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label for="moduleGroup" class="form-label fw-semibold text-secondary">মডিউল গ্রুপ (Group)</label>
+      <select id="moduleGroup" name="group" class="form-select">
+        <option value="">-- গ্রুপ নির্বাচন করুন --</option>
+        {% for g in module_groups %}
+          <option value="{{ g.id }}" {% if form.instance.group and form.instance.group.id == g.id %}selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6 d-flex flex-column justify-content-end pb-2">
+      <div class="form-check form-switch mb-2">
+        <input type="checkbox" id="moduleVisible" name="is_visible" value="true" class="form-check-input" {% if form.instance.id == None or form.instance.is_visible %}checked{% endif %}>
+        <label class="form-check-label fw-medium text-dark" for="moduleVisible">🌐 মেন্যুতে দৃশ্যমান (Visible)</label>
+      </div>
+      
+      <div class="form-check form-switch">
+        <input type="checkbox" id="moduleHeader" name="is_header" value="true" class="form-check-input" {% if form.instance.is_header %}checked{% endif %}>
+        <label class="form-check-label fw-medium text-dark" for="moduleHeader">📌 Header সেকশন হিসেবে দেখাও</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer bg-light border-top-0">
+    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">বাতিল</button>
+    <button type="submit" class="btn btn-primary px-4 shadow-sm">💾 সংরক্ষণ করুন</button>
+  </div>
+</form>
+
+<script>
+  document.getElementById('moduleIcon')?.addEventListener('input', function() {
+    const iconClass = this.value.trim() || 'bi bi-box';
+    const previewIcon = document.querySelector('#iconPreview i');
+    if (previewIcon) {
+      previewIcon.className = iconClass;
+    }
+  });
+</script>

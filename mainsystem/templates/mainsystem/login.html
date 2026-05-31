@@ -1,0 +1,203 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Punch Time ERP</title>
+    
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet"> 
+    <link href="{% static 'css/tom-select.css' %}" rel="stylesheet"> 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        @font-face { 
+            font-family: 'SolaimanLipi'; 
+            src: url("{% static 'fonts/SolaimanLipi.ttf' %}"); 
+        }
+        
+        :root { 
+            --body-bg: #f1f5f9;
+            --card-dark: #1e293b; 
+            --accent-color: #3b82f6; 
+            --accent-hover: #2563eb;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Inter', 'SolaimanLipi', sans-serif;
+        }
+
+        .login-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            background: #ffffff;
+            transition: transform 0.3s ease;
+        }
+
+        .login-header {
+            background: #ffffff;
+            padding: 35px 30px 20px 30px;
+            text-align: center;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .input-group-text {
+            background-color: #f8fafc;
+            border-right: none;
+            color: #64748b;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-left: none;
+            font-size: 0.95rem;
+            background-color: #f8fafc;
+        }
+
+        .form-control:focus {
+            box-shadow: none;
+            border-color: var(--accent-color);
+            background-color: #ffffff;
+        }
+
+        .form-control:focus + .input-group-text,
+        .input-group:focus-within .input-group-text {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .btn-login {
+            background: var(--accent-color);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease-in-out;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-login:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Loading Spinner Inside Button */
+        .btn-spinner {
+            display: none;
+            width: 1.2rem;
+            height: 1.2rem;
+            border-width: 0.15em;
+        }
+
+        .tracking-tight { letter-spacing: -0.5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card login-card">
+                
+                <!-- Header with Unified Brand SVG Logo -->
+                <div class="login-header">
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="42" height="42">
+                            <defs>
+                                <linearGradient id="loginPunchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#3b82f6" />
+                                    <stop offset="100%" stop-color="#0dcaf0" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#loginPunchGrad)" stroke-width="4" stroke-dasharray="8 4" />
+                            <circle cx="50" cy="50" r="38" fill="#ffffff" />
+                            <path d="M40,38 Q50,28 60,38 M35,46 Q50,33 65,46 M30,54 Q50,40 70,54" fill="none" stroke="#f1f5f9" stroke-width="3" stroke-linecap="round" />
+                            <line x1="50" y1="50" x2="50" y2="26" stroke="#3b82f6" stroke-width="5" stroke-linecap="round" />
+                            <line x1="50" y1="50" x2="66" y2="50" stroke="#0dcaf0" stroke-width="5" stroke-linecap="round" />
+                            <circle cx="50" cy="50" r="5" fill="#198754" />
+                        </svg>
+                        <h4 class="fw-bold text-dark mb-0 tracking-tight">Manual<span class="text-primary">Entry</span></h4>
+                    </div>
+                    <p class="text-muted small mb-0">save your data...</p>
+                </div>
+                
+                <div class="card-body p-4 pt-3">
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2 small rounded-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Invalid username or password!</span>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="loginForm">
+                        {% csrf_token %}
+                        
+                        <!-- Username input -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" name="username" class="form-control" placeholder="Enter username" required autocomplete="username">
+                            </div>
+                        </div>
+                        
+                        <!-- Password input -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-secondary">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                <input type="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                            </div>
+                        </div>
+                        
+                        <!-- Actions & Submit -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-login" id="submitBtn">
+                                <span class="spinner-border spinner-border-sm btn-spinner" id="btnSpinner" role="status" aria-hidden="true"></span>
+                                <span id="btnText">Sign In</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Footer Info -->
+                <div class="card-footer text-center bg-white border-0 pb-4">
+                    <small class="text-muted" style="font-size: 11px;">&copy; 2026 ManualEntry | Enterprise Intelligence</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery Script for Button Loading Animation Feedback -->
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        $('#loginForm').on('submit', function() {
+            // Disable the button to prevent multiple submissions
+            $('#submitBtn').prop('disabled', true);
+            // Toggle text and show modern spinner
+            $('#btnText').text('Authenticating...');
+            $('#btnSpinner').show();
+        });
+    });
+</script>
+
+</body>
+</html>

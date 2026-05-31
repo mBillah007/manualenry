@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Print Report{% endblock %}</title>
+  <style>
+    @media print {
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 12pt;
+        color: #000;
+      }
+    }
+    body {
+      margin: 20mm;
+      background: #fff;
+    }
+    .page {
+      page-break-after: always;
+    }
+  </style>
+  {% block styles %}{% endblock %}
+</head>
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,335 @@
+{% extends 'mainsystem/base.html' %}
+{% load static %}
+{% load custom_tags %}
+
+{% block content %}
+<style>
+  @keyframes flash-highlight {
+    0% { background-color: rgba(0, 123, 255, 0.25); }
+    100% { background-color: transparent; }
+  }
+  .highlight-updated-row {
+    animation: flash-highlight 2.5s ease-in-out;
+    border-left: 4px solid #0d6efd !important;
+  }
+  .stats-badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 20px;
+  }
+</style>
+
+{% can_create 'mainsystem:module_list' as can_add_module %}
+{% can_edit 'mainsystem:module_list' as can_edit_module %}
+{% can_delete 'mainsystem:module_list' as can_delete_module %}
+{% can_create 'mainsystem:module_sync' as can_sync_modules %}
+{% can_edit 'mainsystem:module_group_list' as can_edit_module_group %}
+{% can_delete 'mainsystem:module_group_delete' as can_delete_module_group %}
+{% can_create 'mainsystem:module_group_save' as can_create_group %}
+
+<div class="container-fluid py-4">
+  
+  <div class="card shadow-sm border-0 p-4 mb-4 bg-white rounded-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h3 class="fw-bold text-dark mb-1">🧩 Module Management</h3>
+        <span class="badge bg-light text-primary border stats-badge">
+          Total Modules: <strong>{{ total }}</strong>
+        </span>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% if can_create_group %}
+        <button type="button" class="btn btn-outline-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#groupManagerModal">
+          📊 Group Settings
+        </button>
+        {% endif %}
+        
+        {% if can_sync_modules %}
+        <button id="syncModulesBtn" class="btn btn-outline-secondary shadow-sm" data-url="{% url 'mainsystem:module_sync' %}">
+          🔄 Sync System
+        </button>
+        {% endif %}
+        
+        {% if can_add_module %}
+        <button class="btn btn-primary shadow-sm px-4" id="addModuleBtn" data-url="{% url 'mainsystem:module_create' %}">
+          ➕ Add Module
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4 rounded-3">
+    <div class="card-body p-3">
+      <form id="filterForm" method="get" action="{% url 'mainsystem:module_list' %}" class="row g-2 mb-0">
+        <div class="col-md-5">
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-start-0" placeholder="Type name, label or URL to search...">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select name="group" class="form-select">
+            <option value="">All Groups</option>
+            {% for g in module_groups %}
+              <option value="{{ g.id }}" {% if g.id|stringformat:"s" == group_id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="visible" class="form-select">
+            <option value="">All Status</option>
+            <option value="1" {% if visible == 1 %}selected{% endif %}>Visible Only</option>
+            <option value="0" {% if visible == 0 %}selected{% endif %}>Hidden Only</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-dark w-100">Apply Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="module-table" class="card shadow-sm border-0 p-3 rounded-3 bg-white">
+    {% include 'mainsystem/partials/module_table.html' %}
+  </div>
+</div>
+
+<div class="modal fade" id="moduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="moduleModalLabel">Module Action</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="moduleModalBody">
+        </div>
+    </div>
+  </div>
+</div>
+
+{% include 'mainsystem/modals/icon_picker_modal.html' %}
+{% include 'mainsystem/modals/module_group.html' %}
+
+<div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const filterForm = document.getElementById('filterForm');
+  const moduleTable = document.getElementById('module-table');
+  const moduleModalElement = document.getElementById('moduleModal');
+  const moduleModal = new bootstrap.Modal(moduleModalElement);
+  let debounceTimer;
+
+  // সর্টিং ও পেজিনেশন স্টেট ট্র্যাক করার জন্য গ্লোবাল অবজেক্ট
+  let currentState = {
+    sort: '{{ sort|default:"order" }}',
+    dir: '{{ dir|default:"asc" }}',
+    page: '1'
+  };
+
+  // ✨ রো হাইলাইট চেকার রান
+  highlightSavedRow();
+
+  // 🔎 ১. সেন্ট্রালাইজড ডাটা ফেচার
+  function fetchFilteredData(extraParams = {}) {
+    const formData = new FormData(filterForm);
+    const params = new URLSearchParams(formData);
+
+    // গ্লোবাল স্টেট ম্যাপ করা
+    params.set('sort', currentState.sort);
+    params.set('dir', currentState.dir);
+    
+    // অতিরিক্ত প্যারামস ওভাররাইড করা (যেমন: পেজ নম্বর)
+    Object.entries(extraParams).forEach(([key, value]) => {
+      if(value !== null && value !== undefined) {
+        params.set(key, value);
+        if(key === 'page') currentState.page = value;
+      }
+    });
+
+    moduleTable.innerHTML = `
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted">Updating list...</div>
+      </div>`;
+
+    fetch(filterForm.action + '?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error();
+      return res.text();
+    })
+    .then(html => {
+      moduleTable.innerHTML = html;
+      highlightSavedRow(); // রেন্ডার শেষে হাইলাইট রান
+      
+      // ব্যাকএন্ড থেকে আসা টোটাল কাউন্টার কার্ডে সিঙ্ক করা
+      const totalCountInput = document.getElementById('updated-total-count');
+      if (totalCountInput) {
+        const totalBadge = document.querySelector('.stats-badge strong');
+        if (totalBadge) totalBadge.textContent = totalCountInput.value;
+      }
+    })
+    .catch(() => {
+      moduleTable.innerHTML = '<div class="alert alert-danger text-center">Failed to refresh table.</div>';
+    });
+  }
+
+  // 🔎 ২. পেজিনেশন এবং সর্টিং হ্যান্ডলার (ফিক্সড ইভেন্ট ডেলিগেশন)
+  moduleTable.addEventListener('click', e => {
+    const pageLink = e.target.closest('.page-link');
+    const sortLink = e.target.closest('.sort-link');
+
+    // পেজিনেশন হ্যান্ডলিং
+    if (pageLink) {
+      e.preventDefault();
+      const page = pageLink.getAttribute('data-page');
+      if (page) fetchFilteredData({ page: page });
+    }
+
+    // সর্টিং হ্যান্ডলিং
+    if (sortLink) {
+      e.preventDefault();
+      const targetSort = sortLink.getAttribute('data-sort');
+      // যদি একই কলামে আবার ক্লিক হয় তবে ডাইরেকশন উল্টে যাবে, অন্যথায় 'asc' হবে
+      currentState.dir = (currentState.sort === targetSort && currentState.dir === 'asc') ? 'desc' : 'asc';
+      currentState.sort = targetSort;
+      
+      fetchFilteredData({ page: 1 }); // সর্ট বদলালে ১ম পেজে ফেরত যাবে
+    }
+  });
+
+  // 🔎 ৩. লাইভ সার্চ ডিবান্স
+  filterForm.querySelector('input[name="q"]')?.addEventListener('keyup', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => fetchFilteredData({ page: 1 }), 300);
+  });
+
+  // 🔎 ৪. ড্রপডাউন চেঞ্জ ট্রিপল ফিল্টার
+  filterForm.addEventListener('change', (e) => {
+    if (e.target.tagName === 'SELECT') fetchFilteredData({ page: 1 });
+  });
+
+  filterForm.addEventListener('submit', e => {
+    e.preventDefault();
+    fetchFilteredData({ page: 1 });
+  });
+
+  // ➕/✏️ মোডাল ফর্ম ওপেনিং লজিক
+  document.body.addEventListener('click', e => {
+    const btn = e.target.closest('#addModuleBtn, .edit-module-btn');
+    if (!btn) return;
+
+    const url = btn.getAttribute('data-url');
+    document.getElementById('moduleModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>';
+    moduleModal.show();
+
+    fetch(url)
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('moduleModalBody').innerHTML = html;
+        const formInstanceName = document.querySelector('#moduleForm')?.getAttribute('data-instance-name');
+        document.getElementById('moduleModalLabel').textContent = formInstanceName ? `✏️ Edit Module: ${formInstanceName}` : '➕ Add New Module';
+      });
+  });
+
+  // 💾 ফর্ম সাবমিশন এবং সেশন ট্র্যাকিং
+  document.body.addEventListener('submit', e => {
+    const form = e.target.closest('#moduleForm');
+    if (!form) return;
+
+    e.preventDefault();
+    const actionUrl = form.getAttribute('action') || window.location.href;
+
+    fetch(actionUrl, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+      body: new FormData(form)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast('🎉 Successfully Saved!', 'success');
+        moduleModal.hide();
+        
+        if (data.id || data.module_id) {
+          sessionStorage.setItem('justUpdatedModuleId', data.id || data.module_id);
+        }
+        setTimeout(() => location.reload(), 600); 
+      } else {
+        showToast(data.message || 'Error occurred while saving.', 'danger');
+      }
+    });
+  });
+
+  // 🗑️ ডিলিট কন্ট্রোল
+  document.body.addEventListener('click', e => {
+    const btn = e.target.closest('.delete-module-btn');
+    if (!btn) return;
+
+    const url = btn.getAttribute('data-url');
+    if (confirm('Are you sure you want to delete this module?')) {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message || 'Deleted!', 'success');
+          setTimeout(() => location.reload(), 600);
+        }
+      });
+    }
+  });
+
+  // 🧩 রো হাইলাইট করার মেকানিজম
+  function highlightSavedRow() {
+    const updatedId = sessionStorage.getItem('justUpdatedModuleId');
+    if (updatedId) {
+      const targetRow = document.getElementById(`module-row-${updatedId}`);
+      if (targetRow) {
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetRow.classList.add('highlight-updated-row');
+        setTimeout(() => {
+          sessionStorage.removeItem('justUpdatedModuleId');
+        }, 3000);
+      }
+    }
+  }
+
+  // 🚨 গ্লোবাল টোস্ট কন্ট্রোলার
+  function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastWrapper = document.createElement('div');
+    toastWrapper.className = `toast align-items-center text-white bg-${type} border-0 mb-2 shadow`;
+    toastWrapper.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>`;
+    toastContainer.appendChild(toastWrapper);
+    new bootstrap.Toast(toastWrapper, { delay: 3000 }).show();
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'mainsystem/base.html' %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h3 class="fw-bold text-dark mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i> Enterprise Dashboard</h3>
+            <p class="text-muted small mb-0">{{ today|date:"l, d F Y" }} | <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ role }} Mode</span></p>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <div class="btn-group shadow-sm">
+                {% if role == 'Admin' or role == 'Receptionist' or role == 'AdmissionOfficer' %}
+                <a href="/ipd/admission/add/" class="btn btn-primary px-4"><i class="bi bi-person-plus-fill me-1"></i> Admit Patient</a>
+                {% endif %}
+                {% if role == 'Admin' or role == 'mainsystemOfficer' %}
+                <a href="/billing/advice-invoice-list/" class="btn btn-white border"><i class="bi bi-file-earmark-bar-graph me-1"></i> Reports</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Diag. Collection</span>
+                        <i class="bi bi-activity text-primary"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">৳{{ diag_today.paid|default:0|floatformat:0 }}</h3>
+                    <p class="text-muted small mb-0">{{ diag_today.count|default:0 }} Invoices Generated</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">IPD Collection</span>
+                        <i class="bi bi-hospital text-success"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">৳{{ hosp_today.paid|default:0|floatformat:0 }}</h3>
+                    <p class="text-muted small mb-0">From IPD Billing Module</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-danger border-4">
+              <div class="card-body">
+                  <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted small fw-bold text-uppercase">Today's Due</span>
+                      <i class="bi bi-exclamation-octagon text-danger"></i>
+                  </div>
+                  <h3 class="fw-bold mb-1 text-danger">৳{{ today_due_amount|floatformat:0 }}</h3>
+                  <p class="text-muted small mb-0">Uncollected Revenue Today</p>
+              </div>
+          </div>
+      </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Staff On Duty</span>
+                        <i class="bi bi-people text-info"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ on_duty_staff|default:0 }}</h3>
+                    <p class="text-muted small mb-0">Current Active Roster</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="fw-bold mb-0 text-dark">IPD Occupancy & Patient Flow</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        {% for card in hospital_cards %}
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 bg-light text-center border">
+                                <h6 class="text-muted small text-uppercase mb-2">{{ card.title }}</h6>
+                                <h2 class="fw-bold text-{{ card.color }} mb-0">{{ card.value }}</h2>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-0 text-center">
+                    <h5 class="fw-bold mb-0">System Resources</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'mainsystem:attendance_list' %}" class="list-group-item list-group-item-action py-3 px-4 d-flex align-items-center">
+                            <div class="icon-box bg-primary-subtle text-primary rounded-3 p-2 me-3">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Attendance</h6>
+                                <small class="text-muted">Staff check-in records</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'billing:advice_invoice_list' %}" class="list-group-item list-group-item-action py-3 px-4 d-flex align-items-center">
+                            <div class="icon-box bg-success-subtle text-success rounded-3 p-2 me-3">
+                                <i class="bi bi-receipt-cutoff"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Diagnostics</h6>
+                                <small class="text-muted">Test & l্যাব reports</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'billing:ipd_invoice_list' %}" class="list-group-item list-group-item-action py-3 px-4 d-flex align-items-center">
+                            <div class="icon-box bg-danger-subtle text-danger rounded-3 p-2 me-3">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Discharges</h6>
+                                <small class="text-muted">Finalized patient stay</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if role == 'Admin' or role == 'mainsystemOfficer' %}
+    <div class="card shadow-sm border-0 bg-dark text-white rounded-4 overflow-hidden position-relative">
+        <div class="card-body p-4 position-relative" style="z-index: 2;">
+            <div class="row align-items-center">
+                <div class="col-md-9">
+                    <span class="badge bg-danger mb-2">Financial Alert</span>
+                    <h2 class="fw-bold mb-1">Total Outstanding: ৳{{ all_time_due.amount|default:0|floatformat:2 }}</h2>
+                    <p class="mb-0 text-white-50">You have <strong>{{ all_time_due.count }}</strong> unpaid invoices in the system. Click to manage receivables.</p>
+                </div>
+                <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                    <a href="?global_due=true" class="btn btn-outline-light px-4 rounded-pill">Manage Dues <i class="bi bi-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <i class="bi bi-currency-exchange position-absolute opacity-10" style="font-size: 8rem; right: 20px; top: 50%; transform: translateY(-50%);"></i>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    body { background-color: #f8f9fa; }
+    .card { transition: transform 0.2s; }
+    .card:hover { transform: translateY(-3px); }
+    .icon-box { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+</style>
+
+{% endblock %}

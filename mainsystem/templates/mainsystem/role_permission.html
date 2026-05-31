@@ -1,0 +1,155 @@
+{% extends 'mainsystem/base.html' %}
+{% load custom_tags %}
+{% block content %}
+
+<div class="container">
+  <h4 class="fw-bold text-primary">{{ page_title }}</h4>
+
+  <table class="table table-bordered table-hover mt-4">
+    <thead class="table-light">
+      <tr>
+        <th>মডিউল</th>
+        {% for action in actions %}
+          <th>{{ action.name_bn }}</th>
+        {% endfor %}
+        <th>✏️</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for module in modules %}
+      <tr>
+        <td>{{ module.name }}</td>
+        {% for action in actions %}
+          {% flat_permission_check matrix module.url_name action.key as has_perm %}
+          <td>
+            {% if has_perm %}
+              <span class="text-success">✅</span>
+            {% else %}
+              <span class="text-danger">❌</span>
+            {% endif %}
+          </td>
+        {% endfor %}
+        <td>
+          <button class="btn btn-sm btn-warning edit-permission-btn"
+                  data-module="{{ module.url_name }}"
+                  data-module-name="{{ module.name }}"
+                  data-role-id="{{ role.id }}"
+                  data-actions='{
+                    {% for action in actions %}
+                      {% flat_permission_check matrix module.url_name action.key as has_perm %}
+                      "{{ action.key }}": {{ has_perm|yesno:"true,false" }}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                  }'
+                  data-bs-toggle="modal"
+                  data-bs-target="#permissionModal">
+            ✏️ সম্পাদনা
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+<div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index:1055;"></div>
+
+<script>
+document.querySelectorAll('.edit-permission-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const roleId = btn.dataset.roleId;
+    const moduleUrl = btn.dataset.module;
+    const moduleName = btn.dataset.moduleName;
+    const actions = JSON.parse(btn.dataset.actions);
+
+    document.getElementById('permRoleId').value = roleId;
+    document.getElementById('permModuleUrl').value = moduleUrl;
+
+    const container = document.getElementById('actionCheckboxes');
+    container.innerHTML = '';
+
+    for (const [key, allowed] of Object.entries(actions)) {
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'actions[]';
+      checkbox.value = key;
+      checkbox.checked = allowed;
+      checkbox.id = `action_${key}`;
+
+      const label = document.createElement('label');
+      label.htmlFor = checkbox.id;
+      label.textContent = `🔹 ${key}`;
+
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(label);
+
+      container.appendChild(wrapper);
+    }
+  });
+});
+
+document.getElementById('permissionForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  fetch("{% url 'permission_update' %}", {
+    method: 'POST',
+    headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('✅ অনুমতি সফলভাবে সংরক্ষণ হয়েছে');
+      bootstrap.Modal.getInstance(document.getElementById('permissionModal')).hide();
+      location.reload(); // Optional: refresh matrix
+    } else {
+      showToast('❌ সংরক্ষণ ব্যর্থ হয়েছে', 'danger');
+    }
+  })
+  .catch(() => showToast('❌ সংযোগ ব্যর্থ হয়েছে', 'danger'));
+});
+</script>
+<script>
+document.querySelectorAll('.perm-toggle').forEach(checkbox => {
+  checkbox.addEventListener('change', () => {
+    const formData = new FormData();
+    formData.append('role_id', checkbox.dataset.role);
+    formData.append('module_id', checkbox.dataset.module);
+    formData.append('action_key', checkbox.dataset.action);
+    formData.append('is_allowed', checkbox.checked);
+
+    fetch("{% url 'update_permission' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast('✅ সফলভাবে সংরক্ষণ হয়েছে');
+      } else {
+        showToast('❌ সংরক্ষণ ব্যর্থ হয়েছে', 'danger');
+      }
+    })
+    .catch(() => showToast('❌ সংযোগ ব্যর্থ হয়েছে', 'danger'));
+  });
+});
+
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-white bg-${type} border-0 mb-2`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+  document.getElementById('toastContainer').appendChild(toast);
+  new bootstrap.Toast(toast, { delay: 3000 }).show();
+}
+</script>
+
+{% endblock %}

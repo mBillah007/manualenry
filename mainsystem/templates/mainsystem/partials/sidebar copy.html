@@ -1,0 +1,62 @@
+<aside id="sidebar" class="sidebar bg-light border-end px-2 d-flex flex-column">
+  <div class="p-3 d-flex flex-column flex-grow-1 overflow-hidden">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3"> 
+      <span class="fs-6 fw-bold text-primary sidebar-title">
+        🔧 <small class="text-muted">{{ user_role }}</small>
+      </span>
+      <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
+
+    <hr class="w-100">
+
+    <!-- ✅ Scrollable menu -->
+    <div class="sidebar-scroll flex-grow-1 overflow-auto">
+      <ul class="nav flex-column">
+        {% for group in sidebar_groups %}
+          {% if group.modules|length > 1 %}
+            <div class="accordion mb-2" id="accordion{{ forloop.counter }}">
+              <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                  <button class="accordion-button {% if not group.active %}collapsed{% endif %} fw-bold bg-light text-dark d-flex align-items-center"
+                          type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+                    <i class="{{ group.icon }} me-2"></i>
+                    <span class="sidebar-text">{{ group.name }}</span>
+                  </button>
+                </h2>
+                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if group.active %}show{% endif %}">
+                  <div class="accordion-body px-0">
+                    <ul class="nav flex-column">
+                      {% for module in group.modules %}
+                        <li class="nav-item w-100">
+                          <a href="{{ module.url }}" class="nav-link {% if module.is_active %}active fw-bold bg-primary-subtle text-primary{% endif %}">
+                            <i class="{{ module.icon }} me-2"></i>
+                            <span class="sidebar-text">{{ module.name }}</span>
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            {% for module in group.modules %}
+              <li class="nav-item w-100">
+                <a href="{{ module.url }}" class="nav-link d-flex align-items-center {% if module.is_active %}active fw-bold bg-primary-subtle text-primary{% endif %}">
+                  <i class="{{ module.icon }} me-2"></i>
+                  <span class="sidebar-text">{{ module.name }}</span>
+                </a>
+              </li>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    <br>
+    <hr>
+    <br>
+  </div>
+</aside>

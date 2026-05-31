@@ -1,0 +1,656 @@
+{% extends 'mainsystem/base.html' %}
+{% load static %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background: #f0f2f5; min-height: 100vh;">
+    <!-- Header Section -->
+    <div class="row g-3 mb-4 align-items-center bg-white p-3 rounded-4 shadow-sm mx-0 border">
+        <div class="col-md-6">
+            <h3 class="fw-bold text-dark mb-1"><i class="bi bi-people-fill me-2 text-primary"></i>Personnel Directory</h3>
+            <p class="text-muted mb-0 small">প্রোফাইল, শিফট ও বিভাগ পরিচালনা করুন</p>
+            <div class="mt-2">
+                <span class="badge bg-primary rounded-pill">Total: {{ staffs|length }}</span>
+                <span id="filteredCountBadge" class="badge bg-info rounded-pill">Showing: {{ staffs|length }}</span>
+            </div>
+        </div>
+        <div class="col-md-6 text-md-end d-flex gap-2 justify-content-md-end">
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold border-0" 
+                    style="background: linear-gradient(45deg, #1cc88a, #13855c);"
+                    onclick="openStaffModal()">
+                <i class="bi bi-person-plus-fill me-2"></i>Add Staff
+            </button>
+            <button class="btn btn-outline-primary rounded-pill px-3 fw-bold border-2" data-bs-toggle="modal" data-bs-target="#departmentModal">
+                <i class="bi bi-building-gear me-2"></i>Departments/Class
+            </button>
+            <a href="{% url 'hrm:staff_report'%}" target="_blank" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                <i class="fas fa-print me-2"></i>Print List
+            </a>
+        </div>
+    </div>
+
+    <!-- Multi-Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden border-start border-primary border-5">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="staffSearch" class="form-control bg-light border-0" placeholder="Search name, ID or role...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select id="deptFilter" class="form-select bg-light border-0">
+                        <option value="">All Departments</option>
+                        {% for d in departments %}<option value="{{ d.name }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="roleFilter" class="form-select bg-light border-0">
+                        <option value="">All User Roles</option>
+                        {% for role in user_roles %}
+                            <option value="{{ role.name }}">{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-select bg-light border-0">
+                        <option value="">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100 border-0" onclick="resetStaffFilters()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Table -->
+    {% regroup staffs by department.name as dept_group %}
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive" id="printableArea">
+            <table class="table table-hover align-middle mb-0" id="staffTable" style="width: 100%; border-collapse: collapse;">
+                <thead class="table-light">
+                    <tr class="text-muted small text-uppercase" style="letter-spacing: 0.5px; background-color: #f8f9fa;">
+                        <th style="width: 50px; padding: 12px;" class="text-center">SL</th>
+                        <th style="width: 60px;" class="text-center">Photo</th>
+                        <th style="width: 100px;" class="text-center">ID</th>
+                        <th style="width: 240px;" class="text-start">Name & Parents Info</th>
+                        <th style="width: 80px;" class="text-center">Roll</th> <!-- Designation converted to Roll -->
+                        <th style="width: 160px;" class="text-start">Contact & Shift</th>
+                        <th style="width: 140px;" class="text-start">Device Info</th>
+                        <th style="width: 90px;" class="text-center">Status</th>
+                        <th style="width: 110px;" class="text-end pe-4 no-print">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in dept_group %}
+                    <!-- Department / Class Divider Row -->
+                    <tr class="dept-header-row" data-dept="{{ dept.grouper|default:'GENERAL ADMINISTRATION' }}">
+                        <td colspan="9" class="dept-row-header" style="background-color: #e9ecef; font-weight: bold; padding: 10px; border-bottom: 2px solid #ced4da; text-align: left;">
+                            <i class="bi bi-mortarboard-fill text-primary me-1"></i> DEPARTMENT / CLASS: {{ dept.grouper|default:"GENERAL ADMINISTRATION"|upper }} 
+                            <span style="float: right; font-size: 11px; color: #495057;">(Total: {{ dept.list|length }} Records)</span>
+                        </td>
+                    </tr>
+
+                    {% for s in dept.list %}
+                    <tr class="staff-row border-bottom border-light shadow-hover" 
+                        id="row-{{ s.id }}"
+                        data-name="{{ s.first_name|lower }} {{ s.last_name|lower }}" 
+                        data-id="{{ s.staff_id|lower }}" 
+                        data-dept="{{ dept.grouper|default:'GENERAL ADMINISTRATION' }}" 
+                        data-role="{{ s.user_type.name }}" 
+                        data-status="{% if s.is_active %}Active{% else %}Inactive{% endif %}">
+                        
+                        <!-- Serial number within this specific group -->
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        
+                        <!-- Photo Column -->
+                        <td class="text-center">
+                            <div class="avatar-box shadow-sm bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold rounded-circle overflow-hidden" style="width: 40px; height: 40px; margin: auto;">
+                                {% if s.profile_image %}
+                                    <img src="{{ s.profile_image.url }}" class="w-100 h-100 object-fit-cover">
+                                {% else %}
+                                    {{ s.first_name|first|upper }}{{ s.last_name|first|upper }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <!-- ID Target -->
+                        <td class="text-center"><small class="text-primary fw-bold font-monospace id-target">{{ s.staff_id|default:"N/A" }}</small></td>
+                        
+                        <!-- Name & Parents Info -->
+                        <td class="text-start">
+                            <span class="d-block fw-bold text-dark search-target" style="font-size: 11.5px;">{{ s.first_name }} {{ s.last_name }}</span>
+                            <div class="d-flex flex-column mt-1" style="font-size: 9px; color: #555; line-height: 1.2;">
+                                <span><strong>F:</strong> {{ s.father_name|default:"N/A" }}</span>
+                                <span><strong>M:</strong> {{ s.mother_name|default:"N/A" }}</span>
+                            </div>
+                            <div class="mt-1">
+                                {% if s.blood_group %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger" style="font-size: 9px; padding: 2px 5px;"><i class="bi bi-droplet-fill me-1"></i>{{ s.blood_group }}</span>
+                                {% endif %}
+                                {% if s.gender %}
+                                    <small class="text-muted ms-1" style="font-size: 11px;">
+                                        {% if s.gender == 'male' %}<i class="bi bi-gender-male text-info" title="Male"></i>{% elif s.gender == 'female' %}<i class="bi bi-gender-female text-danger" title="Female"></i>{% else %}<i class="bi bi-gender-ambiguous text-secondary" title="Other"></i>{% endif %}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <!-- Class Roll (Designation as Roll) -->
+                        <td class="text-center">
+                            <span style="font-weight: bold; font-size: 12px; background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 3px 8px; border-radius: 4px; display: inline-block; min-width: 35px;">
+                                {{ s.designation|default:"-" }}
+                            </span>
+                            <!-- Hidden Role/Access Name for UI Filtering -->
+                            <div class="user-role-target d-none">{{ s.user_type.name }}</div>
+                        </td>
+                        
+                        <!-- Contact & Shift Details -->
+                        <td class="text-start">
+                            <div class="small fw-semibold text-dark mb-1" style="font-size: 11px;">
+                                <i class="bi bi-telephone me-1.5 text-muted"></i>{{ s.phone_number|default:"N/A" }}
+                            </div>
+                            {% if s.email %}
+                                <div class="small text-muted mb-1" style="font-size: 10px;">
+                                    <i class="bi bi-envelope-at me-1.5"></i>{{ s.email }}
+                                </div>
+                            {% endif %}
+                            <div class="text-muted" style="font-size: 9.5px;">
+                                <i class="bi bi-clock-history me-1 text-warning"></i>Shift: <span class="fw-semibold text-secondary">{{ s.shift.name|default:"Not Set" }}</span>
+                            </div>
+                        </td>
+                        
+                        <!-- Device Sync & Weekly Off Day -->
+                        <td class="text-start">
+                            <div class="mb-1" style="line-height: 1.1;">
+                                <small class="text-muted d-block" style="font-size: 9px; text-transform: uppercase;">Biometric UID</small>
+                                {% if s.device_user_id %}
+                                    <span class="badge bg-dark bg-opacity-10 text-dark font-monospace px-1.5" style="font-size: 9.5px;"><i class="bi bi-cpu me-1 text-secondary"></i>{{ s.device_user_id }}</span>
+                                {% else %}
+                                    <span class="text-muted small" style="font-size: 10px;">—</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <span class="text-muted" style="font-size: 9.5px;">
+                                    <i class="bi bi-calendar-x me-1 text-danger"></i>Off: 
+                                    <span class="fw-bold text-danger-emphasis">
+                                        {% if s.weekly_off == '0' %}Friday
+                                        {% elif s.weekly_off == '1' %}Saturday
+                                        {% elif s.weekly_off == '2' %}Sunday
+                                        {% elif s.weekly_off == '3' %}Monday
+                                        {% elif s.weekly_off == '4' %}Tuesday
+                                        {% elif s.weekly_off == '5' %}Wednesday
+                                        {% elif s.weekly_off == '6' %}Thursday
+                                        {% else %}None{% endif %}
+                                    </span>
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Real-time Status -->
+                        <td class="text-center">
+                            <div class="status-target d-none">{% if s.is_active %}Active{% else %}Inactive{% endif %}</div>
+                            {% if s.is_active %}
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1 fw-semibold border border-success border-opacity-25 d-inline-flex align-items-center gap-1" style="font-size: 10.5px;">
+                                    <span class="pulse-dot bg-success" style="width: 5px; height: 5px; border-radius: 50%;"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2.5 py-1 fw-semibold border border-secondary border-opacity-25" style="font-size: 10.5px;">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions Operator -->
+                        <td class="text-end pe-4 no-print">
+                            <div class="btn-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                                <button class="btn btn-link btn-sm text-warning px-2.5 border-0 transition-all" onclick="editStaff('{{ s.id }}')" title="Edit Profile">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-link btn-sm text-info px-2.5 border-start border-end-0 transition-all" onclick="viewIDCard('{{ s.staff_id }}')" title="ID Card">
+                                    <i class="bi bi-person-badge"></i>
+                                </button>
+                                <a href="{% url 'hrm:staff_biodata' s.id %}" target="_blank" class="btn btn-link btn-sm text-danger px-2.5 border-start text-decoration-none transition-all" title="Download CV/Biodata">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i> <span class="small fw-bold" style="font-size: 9.5px;">CV</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% empty %}
+                    <!-- Empty State Row -->
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="py-4 opacity-50">
+                                <i class="bi bi-people text-muted display-2"></i>
+                                <h5 class="text-muted mt-3 fw-bold">No personnel found in the directory.</h5>
+                                <p class="text-muted small">নতুন প্রোফাইল রেজিস্ট্রেশন করতে ওপরের "Add Staff" বাটনটি ব্যবহার করুন।</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+<style>
+    /* স্মুথ পালস ইফেক্ট অ্যাক্টিভ ডটের জন্য */
+    .pulse-dot {
+        display: inline-block;
+        border-radius: 50%;
+        animation: statusPulse 2s infinite;
+    }
+    @keyframes statusPulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(40, 167, 69, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+    .transition-all:hover {
+        background-color: var(--bs-light);
+    }
+</style>
+</div>
+
+{% include 'hrm/modals/add_staff.html' %}
+{% include 'hrm/modals/add_department.html' %}
+
+<style>
+    .avatar-box { width: 42px; height: 42px; background: #1e293b; color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); }
+    .pulse-dot { height: 8px; width: 8px; background-color: #1cc88a; border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(28, 200, 138, 0); } 100% { box-shadow: 0 0 0 0 rgba(28, 200, 138, 0); } }
+    .shadow-hover:hover { background-color: #f8f9fa !important; box-shadow: inset 4px 0 0 #0d6efd; transition: all 0.2s ease-in-out; }
+    
+    @media print {
+        body * { visibility: hidden; }
+        #printableArea, #printableArea * { visibility: visible; }
+        #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+        .no-print { display: none !important; }
+        .card { border: 0 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/sweetalert2@11.js' %}"></script>
+<script>
+    const staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
+    const staffForm = document.getElementById('staffForm');
+
+   document.addEventListener('DOMContentLoaded', () => {
+        const staffSearch = document.getElementById('staffSearch');
+        const deptFilter = document.getElementById('deptFilter');
+        const roleFilter = document.getElementById('roleFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const filteredCountBadge = document.getElementById('filteredCountBadge');
+
+        function applyStaffFilters() {
+            const query = staffSearch.value.toLowerCase().trim();
+            const selectedDept = deptFilter.value.trim().toLowerCase();
+            const selectedRole = roleFilter.value.trim().toLowerCase();
+            const selectedStatus = statusFilter.value.trim().toLowerCase();
+            
+            const rows = document.querySelectorAll('.staff-row');
+            let visibleCount = 0;
+
+            // প্রথমে সব স্টাফ রো ফিল্টার করি
+            rows.forEach(row => {
+                // HTML-এর data-* attribute থেকে সরাসরি নিখুঁত ভ্যালু নিচ্ছি
+                const rowName = (row.getAttribute('data-name') || '').toLowerCase();
+                const rowId = (row.getAttribute('data-id') || '').toLowerCase();
+                const rowDept = (row.getAttribute('data-dept') || '').toLowerCase();
+                const rowRole = (row.getAttribute('data-role') || '').toLowerCase();
+                const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+                
+                // সার্চবার যদি খালি থাকে অথবা নাম/আইডিতে মিলে যায়
+                const matchesSearch = query === "" || rowName.includes(query) || rowId.includes(query);
+                
+                // ড্রপডাউন ফিল্টার ম্যাচিং
+                const matchesDept = selectedDept === "" || rowDept === selectedDept;
+                const matchesRole = selectedRole === "" || rowRole === selectedRole;
+                const matchesStatus = selectedStatus === "" || rowStatus === selectedStatus;
+
+                if (matchesSearch && matchesDept && matchesRole && matchesStatus) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            // ডিপার্টমেন্ট হেডার রো ম্যানেজমেন্ট (কোনো ডিপার্টমেন্ট খালি হলে হেডারও লুকিয়ে যাবে)
+            const deptHeaders = document.querySelectorAll('.dept-header-row');
+            deptHeaders.forEach(header => {
+                const deptName = header.getAttribute('data-dept');
+                // চেক করছি এই ডিপার্টমেন্টের কোনো স্টাফ রো দৃশ্যমান আছে কিনা
+                const hasVisibleStaff = Array.from(rows).some(row => {
+                    return row.getAttribute('data-dept') === deptName && row.style.display !== 'none';
+                });
+
+                if (hasVisibleStaff) {
+                    header.style.display = "";
+                } else {
+                    header.style.display = "none";
+                }
+            });
+
+            // কাউন্টার আপডেট (যদি ব্যাজটি HTML-এ থাকে)
+            if (filteredCountBadge) {
+                filteredCountBadge.innerText = `Showing: ${visibleCount}`;
+            }
+        }
+
+        // লাইভ ফিল্টারিং ইভেন্ট লিসেনারস
+        staffSearch.addEventListener('input', applyStaffFilters);
+        deptFilter.addEventListener('change', applyStaffFilters);
+        roleFilter.addEventListener('change', applyStaffFilters);
+        statusFilter.addEventListener('change', applyStaffFilters);
+
+        // রিসেট ফাংশন (গ্লোবাল স্কোপে যুক্ত করা হয়েছে যাতে HTML-এর onclick থেকে কাজ করে)
+        window.resetStaffFilters = function() {
+            staffSearch.value = "";
+            deptFilter.value = "";
+            roleFilter.value = "";
+            statusFilter.value = "";
+            applyStaffFilters();
+        };
+    });
+    function resetStaffFilters() {
+        document.getElementById('staffSearch').value = "";
+        document.getElementById('deptFilter').value = "";
+        document.getElementById('statusFilter').value = "";
+        document.getElementById('staffSearch').dispatchEvent(new Event('input'));
+    }
+    // ২. মোডাল কন্ট্রোল ফাংশন (গ্লোবাল স্কোপে রাখা হয়েছে)
+    function openStaffModal() {
+        if (!staffForm) {
+            console.error("Form not found!");
+            return;
+        }
+        staffForm.reset();
+        document.getElementById('staff_db_id').value = ''; 
+        document.getElementById('modalTitle').innerText = "নতুন স্টাফ নিবন্ধন";
+        
+        // ইমেজ প্রিভিউ থাকলে তা ক্লিয়ার করুন
+        const imgPrev = document.getElementById('imagePreview');
+        if (imgPrev) imgPrev.innerHTML = '<i class="bi bi-camera text-muted fs-4"></i>';
+        
+        staffModal.show();
+    }
+
+// ৩. AJAX ফর্ম সাবমিট
+if (staffForm) {
+    staffForm.onsubmit = function(e) {
+        e.preventDefault(); // প্রথমে ডিফল্ট সাবমিট থামান
+
+        // বুটস্ট্র্যাপের ভ্যালিডেশন চেক করুন
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            this.classList.add('was-validated'); // লাল এরর বর্ডার দেখানোর জন্য ক্লাস যোগ করুন
+            
+            // প্রথম যে ইনপুটটিতে এরর আছে, পেজটিকে সেখানে স্ক্রোল করে ফোকাস করুন (ইউজার এক্সপেরিয়েন্সের জন্য ভালো)
+            const firstInvalidInput = this.querySelector(':invalid');
+            if (firstInvalidInput) {
+                firstInvalidInput.focus();
+            }
+            return; // ফর্ম ইনভ্যালিড হলে এখানেই কোড থমকে যাবে, নিচে নামবে না
+        }
+
+        // ফর্ম যদি সম্পূর্ণ ভ্যালিড হয়, তবেই নিচের কোড রান হবে
+        this.classList.add('was-validated'); 
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        fetch("{% url 'hrm:staff_list' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-CSRFToken": "{{ csrf_token }}" }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'সফল', 
+                    text: data.message, 
+                    timer: 1500, 
+                    showConfirmButton: false 
+                })
+                .then(() => {
+                    // সার্ভার থেকে পাঠানো ইউআরএল এ রিডাইরেক্ট করুন
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        location.reload(); // ব্যাকআপ হিসেবে রিলোড
+                    }
+                });
+            } else {
+                if (submitBtn) submitBtn.disabled = false;
+                Swal.fire({ icon: 'error', title: 'ব্যর্থ', text: data.message });
+            }
+        })
+        .catch(err => {
+            if (submitBtn) submitBtn.disabled = false;
+            Swal.fire('ত্রুটি', 'সার্ভার রেসপন্স করছে না', 'error');
+        });
+    };
+}
+function editStaff১১(staffId) {
+    // ফর্ম রিসেট এবং টাইটেল পরিবর্তন
+    $('#staffForm')[0].reset();
+    $('#modalTitle').text('EDIT STAFF PROFILE');
+    $('#imagePreview').html('<i class="bi bi-person-fill text-secondary opacity-25" style="font-size: 5rem;"></i>');
+
+    // AJAX রিকোয়েস্ট
+    $.ajax({
+        url: `/hrm/get-staff-data/${staffId}/`, // আপনার URL মেপিং অনুযায়ী ঠিক করে নিন
+        method: 'GET',
+        success: function(response) {
+            if (response.status === 'success') {
+                // বেসিক ইনফরমেশন
+                $('#staff_db_id').val(response.db_id);
+                $('#first_name').val(response.first_name);
+                $('#last_name').val(response.last_name);
+                $('#father_name').val(response.father_name);
+                $('#mother_name').val(response.mother_name);
+                $('#nid_number').val(response.nid_number);
+                $('#staff_id').val(response.staff_id);
+                $('#email').val(response.email);
+                $('#phone_number').val(response.phone_number);
+                $('#emergency_contact').val(response.emergency_contact);
+                $('#designation').val(response.designation);
+                $('#gender').val(response.gender);
+                $('#date_of_birth').val(response.date_of_birth);
+                $('#blood_group').val(response.blood_group);
+                $('#employment_type').val(response.employment_type);
+                $('#basic_salary').val(response.basic_salary);
+                $('#device_user_id').val(response.device_user_id);
+                $('#joining_date').val(response.joining_date);
+                $('#present_address').val(response.present_address);
+                $('#permanent_address').val(response.permanent_address);
+                $('#status').val(response.work_status);
+                $('#weekly_off').val(response.weekly_off);
+
+                // ড্রপডাউনগুলো সিলেক্ট করা (ForeignKey IDs)
+                $('#user_type_id').val(response.user_type_id).trigger('change');
+                $('#department').val(response.dept_id).trigger('change');
+                $('#shift').val(response.shift_id).trigger('change');
+
+                // একটিভ স্ট্যাটাস (Checkbox)
+                $('#is_active').prop('checked', response.is_active);
+
+                // প্রোফাইল ইমেজ প্রিভিউ
+                if (response.profile_image_url) {
+                    $('#imagePreview').html(`<img src="${response.profile_image_url}" class="img-fluid w-100 h-100 object-fit-cover">`);
+                }
+
+                // এডুকেশন টেবিল ম্যানেজমেন্ট
+                $('#educationBody').empty(); // আগের রো মুছে ফেলা
+                if (response.educations && response.educations.length > 0) {
+                    response.educations.forEach(edu => {
+                        addEducationRow(edu);
+                    });
+                } else {
+                    addEducationRow(); // ডাটা না থাকলে একটি খালি রো দেয়া
+                }
+
+                // মডাল দেখানো
+                $('#staffModal').modal('show');
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('সার্ভার থেকে ডাটা আনতে সমস্যা হয়েছে!');
+        }
+    });
+}
+// ৫. স্ট্যাটাস পরিবর্তনের সাথে সাথে পদত্যাগ তারিখ টগল
+document.getElementById('is_active').onchange = function() {
+    const resDiv = document.getElementById('resignation_div');
+    if (this.value === "False") {
+        resDiv.classList.remove('d-none');
+    } else {
+        resDiv.classList.add('d-none');
+        document.getElementById('resignation_date').value = '';
+    }
+}
+// ৬. ডিপার্টমেন্ট ম্যানেজমেন্ট (AJAX)
+const deptForm = document.getElementById('departmentForm');
+const deptSubmitBtn = document.getElementById('deptSubmitBtn');
+const clearDeptBtn = document.getElementById('clearDeptBtn');
+const deptIdInput = document.getElementById('deptId');
+
+function resetDeptForm() {
+    deptForm.reset();
+    deptIdInput.value = '';
+    deptSubmitBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> বিভাগ যোগ করুন';
+    deptSubmitBtn.className = 'btn btn-primary rounded-pill px-4 fw-bold shadow-sm';
+    clearDeptBtn.classList.add('d-none');
+    deptForm.classList.remove('bg-warning-subtle', 'border-warning');
+}
+
+function editDept(id, name, code, desc) {
+    deptIdInput.value = id;
+    document.getElementById('deptName').value = name;
+    document.getElementById('deptCode').value = code;
+    document.getElementById('deptDesc').value = desc;
+    
+    deptForm.classList.add('bg-warning-subtle', 'border-warning');
+    deptSubmitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> আপডেট করুন';
+    deptSubmitBtn.className = 'btn btn-warning rounded-pill px-4 fw-bold shadow-sm';
+    clearDeptBtn.classList.remove('d-none');
+    
+    // স্ক্রল করে ফর্মের কাছে নিয়ে যাওয়া (অপশনাল)
+    deptForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// আপনার বর্তমান জাভাস্ক্রিপ্ট পরিবর্তন করে নিচেরটি ব্যবহার করুন
+if (deptForm) {
+    deptForm.onsubmit = async function(e) {
+        e.preventDefault(); // ডিফল্ট সাবমিশন বন্ধ করবে
+        
+        const formData = new FormData(this);
+        const submitBtn = document.getElementById('deptSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            // অ্যাকশন URL ঠিক করা (আপনার urls.py অনুযায়ী)
+            const response = await fetch("{% url 'hrm:add_department' %}", {
+                method: "POST",
+                body: formData,
+                headers: { 
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            const data = await response.json();
+
+            if(data.status === 'success') {
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'সফল', 
+                    text: data.message, 
+                    timer: 1500, 
+                    showConfirmButton: false 
+                }).then(() => {
+                    location.reload(); // পেজ রিলোড হবে নতুন ডাটা দেখানোর জন্য
+                });
+            } else {
+                if (submitBtn) submitBtn.disabled = false;
+                Swal.fire({ icon: 'error', title: 'ব্যর্থ', text: data.message });
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            if (submitBtn) submitBtn.disabled = false;
+            Swal.fire('ত্রুটি', 'সার্ভারে সংযোগ দেওয়া সম্ভব হচ্ছে না', 'error');
+        }
+    };
+}
+// ডিলিট ফাংশন (যেহেতু আপনার টেমপ্লেটে বাটন আছে)
+function deleteDept(id, name) {
+    Swal.fire({
+        title: 'আপনি কি নিশ্চিত?',
+        text: `"${name}" বিভাগটি মুছে ফেলা হবে!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'হ্যাঁ, ডিলিট করুন!',
+        cancelButtonText: 'বাতিল'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/hrm/departments/delete/${id}/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire('ডিলিট হয়েছে!', data.message, 'success').then(() => location.reload());
+                }
+            });
+        }
+    });
+}
+function deleteStaff(userId, name) {
+    Swal.fire({
+        title: 'নিশ্চিত তো?',
+        text: `${name}-এর ইউজার প্রোফাইল ডিলিট হবে!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'হ্যাঁ, ডিলিট করুন'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // আপনার ডিলিট URL অনুযায়ী এখানে ফেচ কল করুন
+        }
+    });
+}
+
+function viewIDCard(staffId) {
+    // আইডি যদি খালি, আনডিফাইন্ড বা 'None' (জ্যাঙ্গো থেকে আসা) হয়
+    if (!staffId || staffId === 'None' || staffId === '') {
+        alert('দুঃখিত, এই স্টাফের আইডি পাওয়া যায়নি বা আইডি ফিল্ডটি খালি!');
+        return;
+    }
+    
+    // এখানে ${staffId} ব্যবহার করা হয়েছে
+    const url = `/hrm/staff/id-card/${staffId}/`; 
+    window.open(url, 'ID Card', 'width=400,height=550,status=no,toolbar=no,menubar=no');
+}
+</script>
+{% endblock %}
