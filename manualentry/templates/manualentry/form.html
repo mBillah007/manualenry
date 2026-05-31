@@ -1,0 +1,181 @@
+{% extends 'mainsystem/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="mb-3">
+            <a href="{% url 'manualentry:entry_list' %}" class="text-decoration-none text-secondary small d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-left"></i> Abort & Return to Logs
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-dark p-4 rounded-top-4 border-0 d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-20 rounded-3 p-2.5 d-flex align-items-center justify-content-center text-primary fs-4">
+                    <i class="bi bi-calculator-fill"></i>
+                </div>
+                <div>
+                    <h5 class="text-white fw-bold mb-0">
+                        {% if form.instance.pk %}Modify Active Dataset Registry{% else %}Initialize New Parameter Node{% endif %}
+                    </h5>
+                    <p class="text-muted small mb-0 font-monospace" style="font-size: 11px;">REAL-TIME CORE CODE-ALIGNMENT ENGINE</p>
+                </div>
+            </div>
+            
+            <form method="post" class="card-body p-4 text-secondary" autocomplete="off" onsubmit="showPunchTimeLoader('Verifying matrix integrity and saving...')">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger border-0 rounded-3 shadow-sm d-flex align-items-start gap-3 p-3 mb-4">
+                    <i class="bi bi-exclamation-octagon-fill fs-4 mt-0.5 text-danger"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-danger">Infrastructure Validation Failed</h6>
+                        {% for error in form.non_field_errors %}
+                            <p class="small mb-0 text-dark fw-medium">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-semibold small mb-1">First Entry Pool <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-hash"></i></span>
+                            {{ form.first_entry }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-semibold small mb-1">Second Entry Pool <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-hash"></i></span>
+                            {{ form.second_entry }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-semibold small mb-1">Default Entry Constant</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock-fill text-warning"></i></span>
+                            {{ form.default_entry }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-dark fw-semibold small mb-1">Link Target Terminal <span class="text-danger">*</span></label>
+                        {{ form.total_terminal }}
+                    </div>
+
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded-3 border d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                            <div>
+                                <span class="d-block text-muted small font-monospace" style="font-size: 10px; letter-spacing: 0.5px;">LIVE CODE MATCH ENGINE</span>
+                                <h6 class="text-dark fw-bold mb-0 mt-1">Calculated Net vs Selected Terminal Code</h6>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 w-100 w-sm-auto justify-content-between justify-content-sm-end">
+                                <div class="text-end">
+                                    <span class="d-block text-muted small font-monospace" style="font-size: 9px;">NET OUTPUT</span>
+                                    <span class="fs-4 font-monospace fw-bold text-primary" id="liveCalculatedNet">0</span>
+                                </div>
+                                <div class="border-start ps-3 text-end" style="min-width: 100px;">
+                                    <span class="d-block text-muted small font-monospace" style="font-size: 9px;">STATUS</span>
+                                    <span id="matchingStatusBadge" class="badge bg-secondary mt-1 py-2 px-3 fs-6 font-monospace">No Data</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4 opacity-50">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'manualentry:entry_list' %}" class="btn btn-light border px-4 rounded-3 small fw-medium">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4 rounded-3 small fw-semibold shadow-sm">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Deploy Dataset Matrix
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        function executeLiveCalculation(isManualTerminalChange = false) {
+            let first = parseInt($('#id_first_entry').val()) || 0;
+            let second = parseInt($('#id_second_entry').val()) || 0;
+            let defaultVal = parseInt($('#id_default_entry').val()) || 1;
+
+            // ১. নেট আউটপুট জেনারেট (স্ট্রিং ফরম্যাটে রাখা হলো কোডের সাথে মেলানোর সুবিধার জন্য)
+            let netOutput = 0;
+            if (second > first) {
+                netOutput = second - first - defaultVal;
+            } else {
+                netOutput = first - second - defaultVal;
+            }
+            let netOutputStr = String(netOutput).trim();
+            $('#liveCalculatedNet').text(netOutput);
+
+            // ২. 🤖 অটো-সিলেকশন ইঞ্জিন (কোড বেজড)
+            if (!isManualTerminalChange) {
+                let matchedCodeFound = false;
+
+                $("#id_total_terminal option").each(function() {
+                    let optionText = $(this).text();
+                    if (optionText && optionText.indexOf(' - ') !== -1) {
+                        let textParts = optionText.split(' - ');
+                        // 'TRM-01 - 5' থেকে প্রথম অংশ 'TRM-01' বা '4 - 25' থেকে '4' আলাদা করা
+                        let optionCode = textParts[0].trim(); 
+
+                        // 🎯 এখানে চেকটি কোড এর সাথে মিলানো হচ্ছে
+                        if (optionCode === netOutputStr) {
+                            $('#id_total_terminal').val($(this).val());
+                            matchedCodeFound = true;
+                            return false; // লুপ ব্রেক
+                        }
+                    }
+                });
+
+                if (!matchedCodeFound) {
+                    $('#id_total_terminal').val(""); // কোড না মিললে ড্রপডাউন আন-সিলেক্ট থাকবে
+                }
+            }
+
+            // ৩. লাইভ ম্যাচিং ব্যাজ স্ট্যাটাস আপডেট
+            let selectedText = $("#id_total_terminal option:selected").text();
+            let currentSelectedCode = null;
+
+            if (selectedText && selectedText.indexOf(' - ') !== -1) {
+                let textParts = selectedText.split(' - ');
+                currentSelectedCode = textParts[0].trim();
+            }
+
+            let statusBadge = $('#matchingStatusBadge');
+            
+            if (!currentSelectedCode) {
+                statusBadge.text('Select Node').removeClass('bg-success bg-danger').addClass('bg-secondary');
+            } else if (netOutputStr === currentSelectedCode) {
+                statusBadge.text('✓ Code Matched').removeClass('bg-secondary bg-danger').addClass('bg-success');
+            } else {
+                statusBadge.text('🗙 Code Mismatch').removeClass('bg-secondary bg-success').addClass('bg-danger');
+            }
+        }
+
+        // রিয়েল-টাইম ইভেন্ট লিসেনার ট্রিগার
+        $('#id_first_entry, #id_second_entry').on('input change', function() {
+            executeLiveCalculation(false); // ইনপুট দিলে অটো-সিলেকশন রান হবে
+        });
+
+        $('#id_total_terminal').on('change', function() {
+            executeLiveCalculation(true); // ইউজার ম্যানুয়ালি ড্রপডাউন সিলেক্ট করলে অটো-সিলেকশন লক হবে
+        });
+
+        // ডম (DOM) রেডি হলে ফার্স্ট রান
+        executeLiveCalculation(false);
+    });
+</script>
+{% endblock %}

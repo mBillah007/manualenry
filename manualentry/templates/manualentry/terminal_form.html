@@ -1,0 +1,79 @@
+{% extends 'mainsystem/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="mb-3">
+            <a href="{% url 'manualentry:terminal_list' %}" class="text-decoration-none text-secondary small d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-left"></i> Abort & Return to Terminal Registry
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-dark p-4 rounded-top-4 border-0 d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-20 rounded-3 p-2.5 d-flex align-items-center justify-content-center text-primary fs-4">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <div>
+                    <h5 class="text-white fw-bold mb-0">
+                        {% if form.instance.pk %}Modify Terminal Parameters{% else %}Register New Hardware Terminal{% endif %}
+                    </h5>
+                    <p class="text-muted small mb-0 font-monospace" style="font-size: 11px;">HARDWARE NODE CONFIGURATION</p>
+                </div>
+            </div>
+            
+            <form method="post" class="card-body p-4 text-secondary" autocomplete="off" onsubmit="showPunchTimeLoader('Deploying terminal node to master cluster...')">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger border-0 rounded-3 small">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Please correct the infrastructure configuration errors below.
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label for="id_code" class="form-label text-dark fw-semibold small mb-1">Terminal Code <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-qr-code"></i></span>
+                            <input type="text" name="code" id="id_code" class="form-control {% if form.code.errors %}is-invalid{% endif %}" 
+                                   value="{{ form.code.value|default_if_none:'' }}" placeholder="e.g., TRM-01" required>
+                        </div>
+                        {% for error in form.code.errors %}
+                            <div class="text-danger small mt-1 font-monospace" style="font-size: 11px;"><i class="bi bi-x-circle"></i> {{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_value" class="form-label text-dark fw-semibold small mb-1">Assigned Value Matrix <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-hash"></i></span>
+                            <input type="text" name="value" id="id_value" class="form-control {% if form.value.errors %}is-invalid{% endif %}" 
+                                   value="{{ form.value.value|default_if_none:'' }}" placeholder="e.g., 4,6 or 5" required>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 11px;">Supports alphanumeric metrics or strict digits.</div>
+                        {% for error in form.value.errors %}
+                            <div class="text-danger small mt-1 font-monospace" style="font-size: 11px;"><i class="bi bi-x-circle"></i> {{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-12">
+                        <label for="id_description" class="form-label text-dark fw-semibold small mb-1">Infrastructure Description</label>
+                        <textarea name="description" id="id_description" class="form-control" rows="3" placeholder="Define terminal location, cluster zone, or network topology details...">{{ form.description.value|default_if_none:'' }}</textarea>
+                    </div>
+                </div>
+
+                <hr class="my-4 opacity-50">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'manualentry:terminal_list' %}" class="btn btn-light border px-4 rounded-3 small fw-medium">Cancel Rollback</a>
+                    <button type="submit" class="btn btn-primary px-4 rounded-3 small fw-semibold shadow-sm">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save Terminal Registry
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

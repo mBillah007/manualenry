@@ -1,0 +1,55 @@
+{% extends 'mainsystem/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-12 col-md-6 col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 text-center p-4">
+            <div class="card-body">
+                <div class="mx-auto bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center mb-4 pulse-danger-animation" style="width: 80px; height: 80px;">
+                    <i class="bi bi-exclamation-octagon fs-1"></i>
+                </div>
+                
+                <h4 class="fw-bold text-dark mb-2">Destructive Data Deletion</h4>
+                <p class="text-muted small px-3 mb-4" style="line-height: 1.5;">
+                    Are you absolutely sure you intend to delete this registered object record? This process terminates connections immediately and 
+                    <strong class="text-danger">cannot be undone</strong> under standard ERP safe states.
+                </p>
+
+                <form method="post" id="deleteTriggerSystemicForm">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                        <button type="button" onclick="history.back()" class="btn btn-light border rounded-3 px-4 py-2.5 text-secondary">
+                            Cancel, Retain Data
+                        </button>
+                        <button type="submit" class="btn btn-danger rounded-3 px-4 py-2.5 shadow-sm">
+                            <i class="bi bi-trash-fill me-2"></i>Confirm Purge Execution
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulseDanger {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+        70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .pulse-danger-animation {
+        animation: pulseDanger 2s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $('#deleteTriggerSystemicForm').on('submit', function() {
+        if (typeof showPunchTimeLoader === "function") {
+            showPunchTimeLoader("Purging data objects from active memory layers...");
+        }
+    });
+</script>
+{% endblock %}
