@@ -15,8 +15,8 @@ SECRET_KEY = 'django-insecure-&ly7kv28q$d#&@!c=)5+i6d-q2f&snr)34^770$6=2$sm+g!=e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['mbillah.pythonanywhere.com', '127.0.0.1', 'localhost']
-
+#ALLOWED_HOSTS = ['mbillah.pythonanywhere.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']  # টেস্ট বা ডেমোর জন্য সব হোস্ট অ্যালাউ করে দিন
 
 # Application definition
 
