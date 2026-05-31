@@ -1,60 +1,44 @@
-import socket
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import render, redirect, get_object_or_404
-from mainsystem.models import *
-from mainsystem.forms import *
-from mainsystem.context_processors import has_permission
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse, HttpResponse
-from django.urls import get_resolver
-from django.conf import settings
 import json
+import socket
+from datetime import date, datetime, timedelta
+
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.hashers import make_password
-from django.db import IntegrityError
-from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.views.decorators.csrf import csrf_protect
-
-from django.db.models import Sum, Count, FloatField
-from django.db.models.functions import Cast
-
 from django.core.paginator import Paginator
-from django.shortcuts import render
-from django.db.models import Q
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from mainsystem.models import Module, ModuleGroup, ActionType
-import json
-from django.conf import settings
-from django.db.models import Count, Sum, FloatField, F
+from django.db import IntegrityError, transaction
+from django.db.models import Count, F, FloatField, Q, Sum
 from django.db.models.functions import Cast
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import get_resolver
 from django.utils import timezone
-from django.shortcuts import render
-import qrcode
-import io
-import calendar
-from datetime import datetime, date, timedelta
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from django.http import JsonResponse
-from django.db import transaction
-
-from django.db.models import Q, Prefetch
-from zk import ZK
-from django.contrib import messages
-from dateutil.relativedelta import relativedelta
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_POST
+
+# --- প্রজেক্ট অ্যাপস ও কাস্টম মডিউলস ইမপোর্ট ---
+from mainsystem.context_processors import has_permission
+from mainsystem.models import ActionType, Module, ModuleGroup  # নির্দিষ্ট মডেল ইমপোর্ট করা হলো
+
+# নোট: লোকাল অ্যাপের ওয়াইল্ডকার্ড (*) ইমপোর্টগুলো সবার নিচে রাখা হয়েছে নেমস্পেস ক্ল্যাশ এড়াতে
+from mainsystem.forms import *
+from mainsystem.models import *
+from .models import *
+
+
+# =========================================================================
+#                             VIEWS LOGIC START
+# =========================================================================
 
 @login_required
 def role_list(request):
-    # নেমস্পেস অনুযায়ী পারমিশন চেক
+    # নেমস্পেস অনুযায়ী পারমিশন চেক
     if not has_permission(request, 'mainsystem:role_list', 'access'):
         return render(request, 'mainsystem/403.html', {
             'reason': "❌ আপনি Role Management পৃষ্ঠায় প্রবেশের অনুমতি রাখেন না"
@@ -78,7 +62,7 @@ def role_list(request):
 @require_POST
 @login_required
 def role_form(request, role_id=None):
-    """রোল ক্রিয়েট ও এডিটের প্রধান ভিউ (সিকিউরিটি সহ)"""
+    """রোল ক্রিয়েট ও এডিটের প্রধান ভিউ (সিকিউরিটি সহ)"""
     name = request.POST.get('name', '').strip()
     is_protected = request.POST.get('is_protected') == 'on'
 
@@ -116,7 +100,7 @@ def role_delete(request, role_id):
         return render(request, 'mainsystem/403.html', {'reason': '🔒 সুরক্ষিত রোল মুছে ফেলা যাবে না'})
     
     role.delete()
-    messages.success(request, 'রোলটি সফলভাবে মুছে ফেলা হয়েছে।')
+    messages.success(request, 'রোলটি সফলভাবে মুছে ফেলা হয়েছে।')
     return redirect('mainsystem:role_list')
 
 
@@ -132,7 +116,7 @@ def role_clone_view(request, source_role_id):
         is_protected=False
     )
     
-    # বাল্ক ক্রিয়েট অডিট ট্রেইল বা পারমিশন লগের জন্য তৈরি করা
+    # বাল্ক ক্রিয়েট অডিট ট্রেইল বা পারমিশন লগের জন্য তৈরি করা
     old_perms = Permission.objects.filter(role=source)
     new_perms = [
         Permission(
@@ -145,7 +129,7 @@ def role_clone_view(request, source_role_id):
     ]
     Permission.objects.bulk_create(new_perms)
     
-    messages.success(request, f"'{source.name}' সফলভাবে ক্লোন করা হয়েছে।")
+    messages.success(request, f"'{source.name}' সফলভাবে ক্লোন করা হয়েছে।")
     return redirect('mainsystem:role_list')
 
 
@@ -257,6 +241,8 @@ def revoke_all_permissions_view(request):
 
     Permission.objects.filter(role=role).update(is_allowed=False, updated_by=request.user)
     return JsonResponse({'success': True})
+
+
 # 🔍 ইউজার তালিকা
 @login_required
 def user_list(request):
@@ -266,7 +252,7 @@ def user_list(request):
     # ✅ Permission check with graceful fallback
     if not access_action or not current_url or not has_permission(request, current_url, 'access'):
         return render(request, 'mainsystem/403.html', {
-            'reason': f"❌ আপনি '{current_url}' পৃষ্ঠায় প্রবেশের অনুমতি রাখেন না"
+            'reason': f"❌ আপনি '{current_url}' পৃষ্ঠায় প্রবেশের অনুমতি রাখেন না"
         })
 
     current_user = request.user
@@ -288,13 +274,14 @@ def user_list(request):
         'users': users,
         'roles': roles
     })
+
+
 @login_required
 def user_form_handler(request, user_id=None):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid Method'}, status=405)
 
     data = request.POST
-    # If user_id exists, we are editing; otherwise, creating a new instance
     user = get_object_or_404(CustomUser, id=user_id) if user_id else CustomUser()
 
     try:
@@ -302,18 +289,15 @@ def user_form_handler(request, user_id=None):
         user.email = data.get('email', '').strip()
         user.department = data.get('department', '').strip() 
         
-        # Handle Foreign Key for Role safely
         role_id = data.get('role')
         if role_id:
             user.role_id = role_id
 
-        # Checkbox logic (presence in POST means True)
         user.is_active = 'is_active' in data
         user.is_staff = 'is_staff' in data
         user.is_superuser = 'is_superuser' in data
         user.is_protected = 'is_protected' in data
 
-        # Only set password for NEW users
         if not user_id:
             password = data.get('password')
             confirm_password = data.get('confirm_password')
@@ -327,6 +311,8 @@ def user_form_handler(request, user_id=None):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
 @login_required
 def user_delete(request, user_id):
     if request.method == 'POST':
@@ -338,24 +324,24 @@ def user_delete(request, user_id):
             messages.error(request, "❌ এই ইউজার সুরক্ষিত, ডিলেট করা যাবে না")
         else:
             user.delete()
-            messages.success(request, "✅ ইউজার সফলভাবে মুছে ফেলা হয়েছে")
+            messages.success(request, "✅ ইউজার সফলভাবে মুছে ফেলা হয়েছে")
         return redirect('mainsystem:user_list')
     return redirect('mainsystem:user_list')
+
 
 @require_POST
 @login_required
 def user_password_update(request, user_id):
     if not has_permission(request, 'user_list', 'edit'):
-        return JsonResponse({'success': False, 'error': {'permission': ['পাসওয়ার্ড পরিবর্তনের অনুমতি নেই']}}, status=403)
+        return JsonResponse({'success': False, 'error': {'permission': ['পাসওয়ার্ড পরিবর্তনের অনুমতি নেই']}}, status=403)
 
     new_password = request.POST.get('new_password', '').strip()
     confirm = request.POST.get('confirm_password', '').strip()
 
-
     if not new_password:
-        return JsonResponse({'success': False, 'error': {'new_password': ['পাসওয়ার্ড আবশ্যক']}}, status=400)
+        return JsonResponse({'success': False, 'error': {'new_password': ['পাসওয়ার্ড আবশ্যক']}}, status=400)
     if new_password != confirm:
-        return JsonResponse({'success': False, 'error': {'new_password': ['পাসওয়ার্ড মিলছে না']}}, status=400)
+        return JsonResponse({'success': False, 'error': {'new_password': ['পাসওয়ার্ড মিলছে না']}}, status=400)
 
     user = get_object_or_404(CustomUser, id=user_id)
 
@@ -375,14 +361,17 @@ def user_password_update(request, user_id):
     )
 
     if request.headers.get('x-requested-with') != 'XMLHttpRequest':
-        messages.success(request, "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে")
+        messages.success(request, "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে")
         return redirect('mainsystem:profile_view', user_id=user.id)
 
     return JsonResponse({'success': True})
 
+
 @login_required
 def password_modal_view(request):
     return render(request, 'mainsystem/modals/password_update.html')
+
+
 @csrf_exempt
 @login_required
 def sync_modules_ajax(request):
@@ -403,6 +392,7 @@ def sync_modules_ajax(request):
         return JsonResponse({'success': True, 'added': added})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
+
 @login_required
 def module_list(request):
     q = request.GET.get('q', '').strip()
@@ -414,7 +404,6 @@ def module_list(request):
 
     modules = Module.objects.select_related('group', 'parent')
 
-    # Search Filter
     if q:
         modules = modules.filter(
             Q(name__icontains=q) |
@@ -423,28 +412,22 @@ def module_list(request):
             Q(group__name__icontains=q)
         )
 
-    # Filter by group
     if group_id:
         modules = modules.filter(group_id=group_id)
 
-    # Filter by visibility
     if visible == '1':
         modules = modules.filter(is_visible=True)
     elif visible == '0':
         modules = modules.filter(is_visible=False)
 
-    # Total entries before pagination (accurate count)
     total_count = modules.count()
 
-    # Dynamic Sorting Execution
     actual_sort = f"-{sort_field}" if direction == 'desc' else sort_field
     modules = modules.order_by(actual_sort)
 
-    # Pagination Control
     paginator = Paginator(modules, 20)
     page_obj = paginator.get_page(page_number)
 
-    # Context Data mapping
     context = {
         'page_obj': page_obj,
         'query': q,
@@ -455,11 +438,9 @@ def module_list(request):
         'total': total_count,
     }
 
-    # If AJAX Request (Pagination, Live Search, Sorting)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'mainsystem/partials/module_table.html', context)
 
-    # Heavy asset loads only on full page load
     groups = ModuleGroup.objects.all()
     actions = ActionType.objects.all()
     
@@ -476,6 +457,8 @@ def module_list(request):
     })
 
     return render(request, 'mainsystem/module_list.html', context)
+
+
 @login_required
 def module_form_handler(request, module_id=None):
     instance = get_object_or_404(Module, pk=module_id) if module_id else None
@@ -489,7 +472,6 @@ def module_form_handler(request, module_id=None):
             errors = {field: [str(e) for e in errs] for field, errs in form.errors.items()}
             return JsonResponse({'success': False, 'errors': errors}, status=400)
 
-    # 👉 GET request এ instance সহ ফর্ম পাঠাও
     form = ModuleForm(instance=instance)
     return render(request, 'mainsystem/modals/add_module.html', {
         'form': form,
@@ -497,16 +479,16 @@ def module_form_handler(request, module_id=None):
         'module_groups': ModuleGroup.objects.all()
     })
 
+
 @login_required
 def module_delete(request, module_id):
     if request.method == 'POST':
         module = get_object_or_404(Module, id=module_id)
         module.delete()
 
-        # টেবিল আবার রেন্ডার করে ফেরত দিচ্ছি
         modules = Module.objects.select_related('group', 'parent').order_by('order')
         paginator = Paginator(modules, 10)
-        page_obj = paginator.get_page(1)  # delete এর পর প্রথম পেজ দেখানো হবে
+        page_obj = paginator.get_page(1)
 
         table_html = render(request, 'mainsystem/partials/module_table.html', {
             'page_obj': page_obj,
@@ -515,6 +497,7 @@ def module_delete(request, module_id):
         return JsonResponse({'success': True, 'message': f"Module '{module.name}' deleted successfully", 'table_html': table_html})
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
 
 @login_required
 def module_group_list_view(request):
@@ -526,6 +509,7 @@ def module_group_list_view(request):
         'can_delete': has_permission(request, 'mainsystem:module_group_delete', 'delete'),
     }
     return render(request, 'mainsystem/modals/module_group.html', context)   
+
 
 @csrf_exempt
 @login_required
@@ -568,6 +552,8 @@ def module_group_save_ajax(request):
         return JsonResponse({"success": True, "created": True, "group": {
             "id": group.id, "name": group.name, "icon": group.icon, "order": group.order
         }})
+
+
 @csrf_exempt
 @login_required
 def module_group_delete_ajax(request, id):
