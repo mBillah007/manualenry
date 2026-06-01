@@ -37,6 +37,7 @@ AUTH_USER_MODEL = 'mainsystem.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -124,7 +125,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # লগইন করার পর কোথায় যাবে
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -134,3 +135,6 @@ LOGIN_URL = 'login'
 
 SMS_GATEWAY_URL = "https://api.greenweb.com.bd/api.php" 
 SMS_API_TOKEN = "YOUR_ACTUAL_API_TOKEN_HERE"
+
+# settings.py এর একদম নিচে যোগ করুন
+WHITENOISE_MANIFEST_STRICT = False
